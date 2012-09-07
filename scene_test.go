@@ -23,7 +23,7 @@ func SceneAddSpec(c gospec.Context) {
 	scene := NewScene()
 	
 	c.Specify("Add one actor with one property", func() {
-		p1 := Property{1}
+		p1 := &Property{1}
 		scene.Add("a", p1)
 
 		c.Specify("scene contains one property", func() {
@@ -46,8 +46,8 @@ func SceneAddSpec(c gospec.Context) {
 	})
 
 	c.Specify("Add two actors with one different property each", func() {
-		p1 := Property{1}
-		p2 := Property{2}
+		p1 := &Property{1}
+		p2 := &Property{2}
 		scene.Add("a", p1)
 		scene.Add("b", p2)
 		
@@ -69,8 +69,8 @@ func SceneAddSpec(c gospec.Context) {
 	})
 
 	c.Specify("Add two properties to same actor", func() {
-		p1 := Property{1}
-		p2 := Property{2}
+		p1 := &Property{1}
+		p2 := &Property{2}
 		scene.Add("a", p1)
 		scene.Add("a", p2)
 
@@ -82,7 +82,7 @@ func SceneAddSpec(c gospec.Context) {
 	})
 
 	c.Specify("Add two actors with same property", func() {
-		p1 := Property{1}
+		p1 := &Property{1}
 		scene.Add("a", p1)
 		scene.Add("b", p1)
 
@@ -109,8 +109,100 @@ func SceneAddSpec(c gospec.Context) {
 }
 
 func SceneRemoveSpec(c gospec.Context) {
-	c.Specify("I need tests!", func() {
-		c.Expect(false, Equals, true)
+	scene := NewScene()
+
+	c.Specify("Actor with two properties of same type", func() {
+		p1, p2 := &Property{1}, &Property{1}
+		scene.Add("a", p1)
+		scene.Add("a", p2)
+
+		c.Specify("removing one", func() {
+			scene.Remove("a", p1)
+			
+			c.Specify("actor has only the other property", func() {
+				c.Expect(len(scene.Properties["a"]), Equals, 1)
+				c.Expect(scene.Properties["a"], Contains, p1)
+			})
+			
+			// this is useless!! already have the pointer!
+			/*
+			c.Specify("returns removed property", func() {
+				c.Expect(len(ret), Equals, 1)
+				c.Expect(ret, Contains, p2)
+			})
+			 */
+		})
+	})
+}
+
+func SceneRemoveByTypeSpec(c gospec.Context) {
+	scene := NewScene()
+
+	c.Specify("Actor with two properties of different type", func() {
+		p1, p2 := &Property{1}, &Property{2}
+		scene.Add("a", p1)
+		scene.Add("a", p2)
+
+		c.Specify("remove one property type", func() {
+			ret := scene.RemoveType("a", p2.Tid)
+			
+			c.Specify("actor has only other property left", func() {
+				c.Expect(len(scene.Properties["a"]), Equals, 1)
+				c.Expect(scene.Properties["a"], Contains, p1)
+			})
+
+			c.Specify("returns the removed property", func() {
+				c.Expect(len(ret), Equals, 1)
+				c.Expect(ret, Contains, p2)
+			})
+		})
+
+		c.Specify("remove both property types", func() {
+			scene.RemoveType("a", p1.Tid)
+			scene.RemoveType("a", p2.Tid)
+
+			c.Specify("actor has no properties left", func() {
+				c.Expect(len(scene.Properties["a"]), Equals, 0)
+			})
+		})
+	})
+
+	c.Specify("Removing unknown actor does not affect other actor", func() {
+		scene.Add("a", &Property{1})
+		ret := scene.RemoveType("b", 1)
+
+		c.Specify("does not affect other actor", func() {
+			c.Expect(len(scene.Properties["a"]), Equals, 1)
+			c.Expect(len(scene.Actors[1]), Equals, 1)
+		})
+		
+		c.Specify("returns empty list", func() {
+			c.Expect(len(ret), Equals, 0)
+		})
+		
+		
+	})
+	
+	c.Specify("Actor with two properties of same type", func() {
+		p1, p2 := &Property{1}, &Property{1}
+		scene.Add("a", p1)
+		scene.Add("a", p2)
+
+		c.Specify("removing that property type", func() {
+			ret := scene.RemoveType("a", 1)
+
+			c.Specify("leaves the actor with zero properties", func() {
+				c.Expect(len(scene.Properties["a"]), Equals, 0)
+			})
+
+			c.Specify("returns both removed properties", func() {
+				c.Expect(len(ret), Equals, 2)
+				c.Expect(ret, Contains, p1)
+				c.Expect(ret, Contains, p2)
+			})
+		})
+		
+		
 	})
 }
 
@@ -123,7 +215,7 @@ func SceneFindSpec(c gospec.Context) {
 	})
 
 	c.Specify("One actor, one property", func() {
-		p1 := Property{1}
+		p1 := &Property{1}
 		scene.Add("a", p1)
 
 		c.Specify("for that property returns that actor", func() {
@@ -139,8 +231,8 @@ func SceneFindSpec(c gospec.Context) {
 	})
 
 	c.Specify("Two actors, sharing one property", func() {
-		p1 := Property{1}
-		p2 := Property{2}
+		p1 := &Property{1}
+		p2 := &Property{2}
 		scene.Add("a", p1)
 		scene.Add("b", p1)
 		scene.Add("b", p2)

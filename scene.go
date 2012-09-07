@@ -25,20 +25,19 @@ func Start(s System, interval time.Duration) {
 // todo: custom, optimized data structure, i.e. search tree
 type Scene struct {
 	Actors     map[PropertyType][]Actor
-	Properties map[Actor][]Property
+	Properties map[Actor][]*Property
 }
 
 func NewScene() *Scene {
 	scene := &Scene{}
 	scene.Actors = map[PropertyType][]Actor{}
-	scene.Properties = map[Actor][]Property{}
+	scene.Properties = map[Actor][]*Property{}
 	return scene
 }
 
-// do not take pointers; guarantee that every actor has their own copy
-func (s Scene) Add(a Actor, p Property) {
+func (s Scene) Add(a Actor, p *Property) {
 	if _, present := s.Properties[a]; !present {
-		s.Properties[a] = []Property{}
+		s.Properties[a] = []*Property{}
 	}
 	s.Properties[a] = append(s.Properties[a], p)
 
@@ -48,15 +47,29 @@ func (s Scene) Add(a Actor, p Property) {
 	s.Actors[p.Tid] = append(s.Actors[p.Tid], a)
 }
 
-/*
-func (s Scene)Remove(a Actor, p Property) {	
-	// get actor, if present
-	// find prop, if present (just loop for now)
-	// re-slice around index of that prop
 
-	// remove that actor from all property slices
+func (s Scene)RemoveType(a Actor, p PropertyType) (removed []*Property) {	
+	if props,present := s.Properties[a]; present {
+		kept := []*Property{}
+		for _,prop := range props {
+			if prop.Tid == p {
+				removed = append(removed,prop)
+			} else {
+				kept = append(kept,prop)
+			}
+		}
+		s.Properties[a] = kept
+	}
+
+	return removed
 }
 
+
+ func (s Scene)Remove(a Actor, p *Property) {
+ // take Tid and call overload
+ }
+
+/*
 func (s Scene)Remove(a Actor) {
 	//delete(s.Properties, a)
 
