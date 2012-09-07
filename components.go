@@ -3,7 +3,10 @@ package components
 import "time"
 
 type Actor string
-type Property uint
+type PropertyType uint
+type Property struct {
+	Tid PropertyType
+}
 
 type System interface {
 	Update(timestep time.Duration)
@@ -20,13 +23,13 @@ func Start(s System, interval time.Duration) {
 
 // todo: custom, optimized data structure, i.e. search tree
 type Scene struct {
-	Actors     map[Property][]Actor
+	Actors     map[PropertyType][]Actor
 	Properties map[Actor][]Property
 }
 
 func NewScene() *Scene {
 	scene := &Scene{}
-	scene.Actors = map[Property][]Actor{}
+	scene.Actors = map[PropertyType][]Actor{}
 	scene.Properties = map[Actor][]Property{}
 	return scene
 }
@@ -37,10 +40,10 @@ func (s Scene) Add(a Actor, p Property) {
 	}
 	s.Properties[a] = append(s.Properties[a], p)
 
-	if _, present := s.Actors[p]; !present {
-		s.Actors[p] = []Actor{}
+	if _, present := s.Actors[p.Tid]; !present {
+		s.Actors[p.Tid] = []Actor{}
 	}
-	s.Actors[p] = append(s.Actors[p], a)
+	s.Actors[p.Tid] = append(s.Actors[p.Tid], a)
 }
 
 /*
@@ -59,7 +62,7 @@ func (s Scene)Remove(a Actor) {
 }
 */
 
-func (s Scene) Find(p ...Property) []Actor {
+func (s Scene) Find(p ...PropertyType) []Actor {
 	// return actors that have all of the provided properties
 	result := []Actor{}
 
@@ -69,14 +72,16 @@ func (s Scene) Find(p ...Property) []Actor {
 			ap := s.Properties[a]
 
 			// opt: if actor prop count < len(p) -> skip actor
+			// WARNING: this assumes that actors only have one of each property type
 			if len(ap) < len(p) {
 				continue
 			}
+
 			all := true
 			for _, wanted := range rest {
 				this := false
 				for _, exist := range ap {
-					if exist == wanted {
+					if exist.Tid == wanted {
 						this = true
 					}
 				}
