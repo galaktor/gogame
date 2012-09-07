@@ -22,27 +22,72 @@ func SceneCtorSpec(c gospec.Context) {
 func SceneAddSpec(c gospec.Context) {
 	scene := NewScene()
 	
-	c.Specify("Add actor with one property", func() {
+	c.Specify("Add one actor with one property", func() {
 		scene.Add("a", 1)
-		
-		c.Specify("contains one property", func() {
+
+		c.Specify("scene contains one property", func() {
 			c.Expect(len(scene.Properties), Equals, 1)
+			c.Expect(len(scene.Properties["a"]), Equals, 1)
 		})
 
-		c.Specify("contains just that property for that actor", func() {
+		c.Specify("scene contains just that property for that actor", func() {
 			c.Expect(scene.Properties["a"][0], Equals, Property(1))
 		})
 
-		c.Specify("contains one actor", func() {
+		c.Specify("scene contains one actor", func() {
 			c.Expect(len(scene.Actors), Equals, 1)
+			c.Expect(len(scene.Actors[1]), Equals, 1)
 		})
 
-		c.Specify("contains just that actor for that property", func() {
+		c.Specify("scene contains just that actor for that property", func() {
 			c.Expect(scene.Actors[1][0], Equals, Actor("a"))
 		})
 	})
 
-//	c.Specify("
+	c.Specify("Add two actors with one different property each", func() {
+		scene.Add("a", 1)
+		scene.Add("b", 2)
+		
+		c.Specify("scene contains both properties", func() {
+			c.Expect(len(scene.Properties), Equals, 2)
+			c.Expect(len(scene.Properties["a"]), Equals, 1)
+			c.Expect(scene.Properties["a"][0], Equals, Property(1))
+			c.Expect(len(scene.Properties["b"]), Equals, 1)
+			c.Expect(scene.Properties["b"][0], Equals, Property(2))
+		})
+
+		c.Specify("scene contains both actors", func() {
+			c.Expect(len(scene.Actors), Equals, 2)
+			c.Expect(len(scene.Actors[1]), Equals, 1)
+			c.Expect(scene.Actors[1][0], Equals, Actor("a"))
+			c.Expect(len(scene.Actors[2]), Equals, 1)
+			c.Expect(scene.Actors[2][0], Equals, Actor("b"))
+		})
+	})
+
+	c.Specify("Add two actors with same property", func() {
+		scene.Add("a", 1)
+		scene.Add("b", 1)
+
+		c.Specify("scene contains both actors", func() {
+			c.Expect(len(scene.Actors[1]), Equals, 2)
+			c.Expect(scene.Actors[1], Contains, Actor("a"))
+			c.Expect(scene.Actors[1], Contains, Actor("b"))
+		})
+
+		c.Specify("scene contains just that property", func() {
+			c.Expect(len(scene.Properties["a"]), Equals, 1)
+			c.Expect(scene.Properties["a"], Contains, Property(1))
+			c.Expect(len(scene.Properties["b"]), Equals, 1)
+			c.Expect(scene.Properties["b"], Contains, Property(1))
+		})
+	})
+}
+
+func SceneRemoveSpec(c gospec.Context) {
+	c.Specify("I need tests!", func() {
+		c.Expect(false, Equals, true)
+	})
 }
 
 func SceneFindSpec(c gospec.Context) {
@@ -52,8 +97,6 @@ func SceneFindSpec(c gospec.Context) {
 		result := scene.Find(1)
 		c.Expect(len(result), Equals, 0)
 	})
-
-	
 
 	c.Specify("One actor, one property", func() {
 		scene.Actors = map[Property][]Actor{1:[]Actor{"a"}}
@@ -91,7 +134,4 @@ func SceneFindSpec(c gospec.Context) {
 			c.Expect(len(result), Equals, 0)
 		})
 	})
-	
-	
-	
 }

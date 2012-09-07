@@ -25,22 +25,20 @@ type Scene struct {
 }
 
 func NewScene() *Scene {
-	scene := Scene{}
+	scene := &Scene{}
 	scene.Actors = map[Property][]Actor{}
 	scene.Properties = map[Actor][]Property{}
-	return &scene
+	return scene
 }
 
 func (s Scene) Add(a Actor, p Property) {
-	if v, present := s.Properties[a]; !present {
-		v = []Property{}
-		s.Properties[a] = v
+	if _, present := s.Properties[a]; !present {
+		s.Properties[a] = []Property{}
 	}
 	s.Properties[a] = append(s.Properties[a], p)
 
-	if v, present := s.Actors[p]; !present {
-		v = []Actor{}
-		s.Actors[p] = v
+	if _, present := s.Actors[p]; !present {
+		s.Actors[p] = []Actor{}
 	}
 	s.Actors[p] = append(s.Actors[p], a)
 }
