@@ -1,4 +1,4 @@
-package components
+package scene
 
 import (
 	"github.com/orfjackal/gospec"
@@ -68,6 +68,19 @@ func SceneAddSpec(c gospec.Context) {
 		})
 	})
 
+	c.Specify("Add two properties to same actor", func() {
+		p1 := Property{1}
+		p2 := Property{2}
+		scene.Add("a", p1)
+		scene.Add("a", p2)
+
+		c.Specify("scene contains both properties", func() {
+			c.Expect(len(scene.Properties["a"]), Equals, 2)
+			c.Expect(scene.Properties["a"], Contains, p1)
+			c.Expect(scene.Properties["a"], Contains, p2)
+		})
+	})
+
 	c.Specify("Add two actors with same property", func() {
 		p1 := Property{1}
 		scene.Add("a", p1)
@@ -84,6 +97,13 @@ func SceneAddSpec(c gospec.Context) {
 			c.Expect(scene.Properties["a"], Contains, p1)
 			c.Expect(len(scene.Properties["b"]), Equals, 1)
 			c.Expect(scene.Properties["b"], Contains, p1)
+		})
+
+		c.Specify("each actor has a different instance of equal property", func() {
+			pa := scene.Properties["a"][0]
+			pb := scene.Properties["b"][0]
+			c.Expect(pa, Equals, pb)
+			c.Expect(&pa, Not(Equals), &pb)
 		})
 	})
 }

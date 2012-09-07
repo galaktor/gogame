@@ -1,9 +1,10 @@
-package components
+package scene
 
 import "time"
 
 type Actor string
 type PropertyType uint
+
 type Property struct {
 	Tid PropertyType
 }
@@ -34,6 +35,7 @@ func NewScene() *Scene {
 	return scene
 }
 
+// do not take pointers; guarantee that every actor has their own copy
 func (s Scene) Add(a Actor, p Property) {
 	if _, present := s.Properties[a]; !present {
 		s.Properties[a] = []Property{}
