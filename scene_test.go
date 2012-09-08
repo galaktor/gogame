@@ -27,7 +27,7 @@ func NewProperty(t PropertyType) Property {
 	return &SomeProperty{t}
 }
 
-func (p *SomeProperty)Tid() PropertyType {
+func (p *SomeProperty)Type() PropertyType {
 	return p.tid
 }
 
@@ -111,13 +111,6 @@ func SceneAddSpec(c gospec.Context) {
 			c.Expect(len(scene.Properties["b"]), Equals, 1)
 			c.Expect(scene.Properties["b"], Contains, p1)
 		})
-
-		c.Specify("each actor has a different instance of equal property", func() {
-			pa := scene.Properties["a"][0]
-			pb := scene.Properties["b"][0]
-			c.Expect(pa, Equals, pb)
-			c.Expect(&pa, Not(Equals), &pb)
-		})
 	})
 }
 
@@ -130,7 +123,7 @@ func SceneRemoveSpec(c gospec.Context) {
 		scene.Add("a", p2)
 
 		c.Specify("removing one", func() {
-			scene.Remove("a", p1)
+			scene.RemoveProperty("a", p1)
 
 			c.Specify("actor has only the other property", func() {
 				c.Expect(len(scene.Properties["a"]), Equals, 1)
@@ -151,7 +144,7 @@ func SceneRemoveByTypeSpec(c gospec.Context) {
 		scene.Add("a", p2)
 
 		c.Specify("remove one property type", func() {
-			ret := scene.RemoveType("a", p2.Tid())
+			ret := scene.RemoveType("a", p2.Type())
 			
 			c.Specify("actor has only other property left", func() {
 				c.Expect(len(scene.Properties["a"]), Equals, 1)
@@ -165,8 +158,8 @@ func SceneRemoveByTypeSpec(c gospec.Context) {
 		})
 
 		c.Specify("remove both property types", func() {
-			scene.RemoveType("a", p1.Tid())
-			scene.RemoveType("a", p2.Tid())
+			scene.RemoveType("a", p1.Type())
+			scene.RemoveType("a", p2.Type())
 
 			c.Specify("actor has no properties left", func() {
 				c.Expect(len(scene.Properties["a"]), Equals, 0)

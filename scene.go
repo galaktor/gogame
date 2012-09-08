@@ -3,10 +3,11 @@ package scene
 import "time"
 
 type Actor string
+
 type PropertyType uint
 
 type Property interface {
-	Tid() PropertyType
+	Type() PropertyType
 }
 
 type System interface {
@@ -22,7 +23,7 @@ func Start(s System, interval time.Duration) {
 	}
 }
 
-// todo: custom, optimized data structure, i.e. search tree
+// todo: custom, optimized data structure, e.g. binary search tree
 type Scene struct {
 	Actors     map[PropertyType][]Actor
 	Properties map[Actor][]Property
@@ -41,33 +42,33 @@ func (s Scene) Add(a Actor, p Property) {
 	}
 	s.Properties[a] = append(s.Properties[a], p)
 
-	if _, present := s.Actors[p.Tid()]; !present {
-		s.Actors[p.Tid()] = []Actor{}
+	if _, present := s.Actors[p.Type()]; !present {
+		s.Actors[p.Type()] = []Actor{}
 	}
-	s.Actors[p.Tid()] = append(s.Actors[p.Tid()], a)
+	s.Actors[p.Type()] = append(s.Actors[p.Type()], a)
 }
 
 func (s Scene)RemoveType(a Actor, t PropertyType) (removed []Property) {
 	selector := func(p Property) bool {
-		return p.Tid() == t
+		return p.Type() == t
 	}
 
-	removed = s.RemoveProperty(a, selector)
+	removed = s.RemoveWhere(a, selector)
 	return
 }
 
-func (s Scene)Remove(a Actor, toRemove Property) {
+func (s Scene)RemoveProperty(a Actor, toRemove Property) {
 	selector := func(p Property) bool {
 		return p == toRemove
 	}
 
-	_ = s.RemoveProperty(a, selector)
+	_ = s.RemoveWhere(a, selector)
 	return
 }
 
 type PropertySelector func(Property) bool
 
-func (s Scene)RemoveProperty(a Actor, sel PropertySelector) (removed []Property) {	
+func (s Scene)RemoveWhere(a Actor, sel PropertySelector) (removed []Property) {	
 	if props,present := s.Properties[a]; present {
 		kept := []Property{}
 		for _,prop := range props {
@@ -110,7 +111,7 @@ func (s Scene) Find(p ...PropertyType) (result []Actor) {
 			for _, wanted := range rest {
 				this := false
 				for _, exist := range ap {
-					if exist.Tid() == wanted {
+					if exist.Type() == wanted {
 						this = true
 					}
 				}
