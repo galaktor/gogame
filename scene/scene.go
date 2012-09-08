@@ -1,26 +1,11 @@
 package scene
 
-import "time"
-
 type Actor string
 
 type PropertyType uint
 
 type Property interface {
 	Type() PropertyType
-}
-
-type System interface {
-	Update(timestep time.Duration)
-}
-
-func Start(s System, interval time.Duration) {
-	ticker := time.Tick(interval)
-	last := time.Now()
-	for now := range ticker {
-		s.Update(now.Sub(last))
-		last = now
-	}
 }
 
 // todo: custom, optimized data structure, e.g. binary search tree

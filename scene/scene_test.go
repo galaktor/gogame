@@ -5,7 +5,7 @@ import (
 	. "github.com/orfjackal/gospec"
 )
 
-func SceneCtorSpec(c gospec.Context) {
+func CtorSpec(c gospec.Context) {
 	c.Specify("New scene", func() {
 		scene := NewScene()
 
@@ -32,7 +32,7 @@ func (p *SomeProperty)Type() PropertyType {
 }
 
 
-func SceneAddSpec(c gospec.Context) {
+func AddSpec(c gospec.Context) {
 	scene := NewScene()
 	
 	c.Specify("Add one actor with one property", func() {
@@ -114,7 +114,7 @@ func SceneAddSpec(c gospec.Context) {
 	})
 }
 
-func SceneRemoveSpec(c gospec.Context) {
+func RemovePropertySpec(c gospec.Context) {
 	scene := NewScene()
 
 	c.Specify("Actor with two properties of same type", func() {
@@ -135,7 +135,7 @@ func SceneRemoveSpec(c gospec.Context) {
 	})
 }
 
-func SceneRemoveByTypeSpec(c gospec.Context) {
+func RemoveTypeSpec(c gospec.Context) {
 	scene := NewScene()
 
 	c.Specify("Actor with two properties of different type", func() {
@@ -206,7 +206,7 @@ func SceneRemoveByTypeSpec(c gospec.Context) {
 	})
 }
 
-func SceneFindSpec(c gospec.Context) {
+func FindSpec(c gospec.Context) {
 	scene := NewScene()
 	
 	c.Specify("Find on empty scene returns empty list", func() {

@@ -5,12 +5,14 @@ import (
 	"testing"
 )
 
-func TestAllSpecs(t *testing.T) {
+func TestScene(t *testing.T) {
 	r := gospec.NewRunner()
-	r.AddSpec(SceneCtorSpec)
-	r.AddSpec(SceneAddSpec)
-	r.AddSpec(SceneRemoveSpec)
-	r.AddSpec(SceneRemoveByTypeSpec)
-	r.AddSpec(SceneFindSpec)
+
+	r.AddSpec(CtorSpec)
+	r.AddSpec(AddSpec)
+	r.AddSpec(RemovePropertySpec)
+	r.AddSpec(RemoveTypeSpec)
+	r.AddSpec(FindSpec)
+
 	gospec.MainGoTest(r, t)
 }
