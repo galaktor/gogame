@@ -5,8 +5,8 @@ import "time"
 type Actor string
 type PropertyType uint
 
-type Property struct {
-	Tid PropertyType
+type Property interface {
+	Tid() PropertyType
 }
 
 type System interface {
@@ -25,34 +25,53 @@ func Start(s System, interval time.Duration) {
 // todo: custom, optimized data structure, i.e. search tree
 type Scene struct {
 	Actors     map[PropertyType][]Actor
-	Properties map[Actor][]*Property
+	Properties map[Actor][]Property
 }
 
 func NewScene() *Scene {
 	scene := &Scene{}
 	scene.Actors = map[PropertyType][]Actor{}
-	scene.Properties = map[Actor][]*Property{}
+	scene.Properties = map[Actor][]Property{}
 	return scene
 }
 
-func (s Scene) Add(a Actor, p *Property) {
+func (s Scene) Add(a Actor, p Property) {
 	if _, present := s.Properties[a]; !present {
-		s.Properties[a] = []*Property{}
+		s.Properties[a] = []Property{}
 	}
 	s.Properties[a] = append(s.Properties[a], p)
 
-	if _, present := s.Actors[p.Tid]; !present {
-		s.Actors[p.Tid] = []Actor{}
+	if _, present := s.Actors[p.Tid()]; !present {
+		s.Actors[p.Tid()] = []Actor{}
 	}
-	s.Actors[p.Tid] = append(s.Actors[p.Tid], a)
+	s.Actors[p.Tid()] = append(s.Actors[p.Tid()], a)
 }
 
+func (s Scene)RemoveType(a Actor, t PropertyType) (removed []Property) {
+	selector := func(p Property) bool {
+		return p.Tid() == t
+	}
 
-func (s Scene)RemoveType(a Actor, p PropertyType) (removed []*Property) {	
+	removed = s.RemoveProperty(a, selector)
+	return
+}
+
+func (s Scene)Remove(a Actor, toRemove Property) {
+	selector := func(p Property) bool {
+		return p == toRemove
+	}
+
+	_ = s.RemoveProperty(a, selector)
+	return
+}
+
+type PropertySelector func(Property) bool
+
+func (s Scene)RemoveProperty(a Actor, sel PropertySelector) (removed []Property) {	
 	if props,present := s.Properties[a]; present {
-		kept := []*Property{}
+		kept := []Property{}
 		for _,prop := range props {
-			if prop.Tid == p {
+			if sel(prop) {
 				removed = append(removed,prop)
 			} else {
 				kept = append(kept,prop)
@@ -65,9 +84,7 @@ func (s Scene)RemoveType(a Actor, p PropertyType) (removed []*Property) {
 }
 
 
- func (s Scene)Remove(a Actor, p *Property) {
- // take Tid and call overload
- }
+
 
 /*
 func (s Scene)Remove(a Actor) {
@@ -77,10 +94,7 @@ func (s Scene)Remove(a Actor) {
 }
 */
 
-func (s Scene) Find(p ...PropertyType) []Actor {
-	// return actors that have all of the provided properties
-	result := []Actor{}
-
+func (s Scene) Find(p ...PropertyType) (result []Actor) {
 	if actors, present := s.Actors[p[0]]; present {
 		for _, a := range actors {
 			rest := p[1:]
@@ -96,7 +110,7 @@ func (s Scene) Find(p ...PropertyType) []Actor {
 			for _, wanted := range rest {
 				this := false
 				for _, exist := range ap {
-					if exist.Tid == wanted {
+					if exist.Tid() == wanted {
 						this = true
 					}
 				}
