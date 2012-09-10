@@ -5,20 +5,6 @@ import (
 	. "github.com/orfjackal/gospec"
 )
 
-func CtorSpec(c gospec.Context) {
-	c.Specify("New scene", func() {
-		scene := NewScene()
-
-		c.Specify("has zero actors", func() {
-			c.Expect(len(scene.Actors), Equals, 0)
-	})
-
-		c.Specify("has zero properties", func() {
-			c.Expect(len(scene.Properties), Equals, 0)
-		})
-	})
-}
-
 type SomeProperty struct {
 	tid PropertyType
 }
@@ -27,110 +13,151 @@ func NewProperty(t PropertyType) Property {
 	return &SomeProperty{t}
 }
 
-func (p *SomeProperty)Type() PropertyType {
+func (p *SomeProperty) Type() PropertyType {
 	return p.tid
 }
 
+func CtorSpec(c gospec.Context) {
+	c.Specify("New scene", func() {
+		scene := NewScene()
+
+		c.Specify("has zero actors", func() {
+			c.Expect(len(scene.Actors), Equals, 0)
+		})
+
+		c.Specify("has zero cached by property", func() {
+			c.Expect(len(scene.byProperty), Equals, 0)
+		})
+	})
+}
 
 func AddSpec(c gospec.Context) {
 	scene := NewScene()
-	
+
 	c.Specify("Add one actor with one property", func() {
 		p1 := NewProperty(1)
-		scene.Add("a", p1)
+		a, _ := scene.Add(ActorId("a"))
+		a.Add(p1)
 
-		c.Specify("scene contains one property", func() {
-			c.Expect(len(scene.Properties), Equals, 1)
-			c.Expect(len(scene.Properties["a"]), Equals, 1)
-		})
-
-		c.Specify("scene contains just that property for that actor", func() {
-			c.Expect(scene.Properties["a"][0], Equals, p1)
-		})
-
-		c.Specify("scene contains one actor", func() {
+		c.Specify("scene contains just that one actor", func() {
 			c.Expect(len(scene.Actors), Equals, 1)
-			c.Expect(len(scene.Actors[1]), Equals, 1)
+			c.Expect(scene.Actors["a"], IsSame, a)
+			c.Expect(len(scene.byProperty), Equals, 1)
+			c.Expect(scene.byProperty[1], Contains, a)
 		})
 
-		c.Specify("scene contains just that actor for that property", func() {
-			c.Expect(scene.Actors[1][0], Equals, Actor("a"))
+		c.Specify("actor contains that property", func() {
+			c.Expect(len(a.properties), Equals, 1)
+			c.Expect(a.properties[1], IsSame, p1)
 		})
 	})
 
-	c.Specify("Add two actors with one different property each", func() {
-		p1 := NewProperty(1)
-		p2 := NewProperty(2)
-		scene.Add("a", p1)
-		scene.Add("b", p2)
+	c.Specify("Add two actors with same id", func() {
+		scene.Add(ActorId("foo"))
+		a,err := scene.Add(ActorId("foo"))
 		
-		c.Specify("scene contains both properties", func() {
-			c.Expect(len(scene.Properties), Equals, 2)
-			c.Expect(len(scene.Properties["a"]), Equals, 1)
-			c.Expect(scene.Properties["a"][0], Equals, p1)
-			c.Expect(len(scene.Properties["b"]), Equals, 1)
-			c.Expect(scene.Properties["b"][0], Equals, p2)
+		c.Specify("returns error containing the duplicate actor id - TEST ME!", func() {
+			c.Expect(true, Equals, false)
+		})
+		
+	})
+
+	c.Specify("Add two properties of same type to one actor", func() {
+		a,_ := scene.Add(ActorId("a"))
+		p1, p2 := NewProperty(1), NewProperty(1)
+		a.Add(p1)
+		err := a.Add(p2)
+
+		c.Specify("returns error contains the duplicate property type id - TEST ME!", func() {
+			c.Expect(true, Equals, false)
+		})
+	})
+
+	c.Specify("Add two actors with different properties", func() {
+		p1, p2 := NewProperty(1), NewProperty(2)
+		a, _ := scene.Add(ActorId("a"))
+		a.Add(p1)
+		b, _ := scene.Add(ActorId("b"))
+		b.Add(p2)
+
+		c.Specify("both actors contain those properties", func() {
+			c.Expect(len(a.properties), Equals, 1)
+			c.Expect(a.properties[1], IsSame, p1)
+			c.Expect(len(b.properties), Equals, 1)
+			c.Expect(b.properties[2], IsSame, p2)
 		})
 
 		c.Specify("scene contains both actors", func() {
 			c.Expect(len(scene.Actors), Equals, 2)
-			c.Expect(len(scene.Actors[1]), Equals, 1)
-			c.Expect(scene.Actors[1][0], Equals, Actor("a"))
-			c.Expect(len(scene.Actors[2]), Equals, 1)
-			c.Expect(scene.Actors[2][0], Equals, Actor("b"))
+			c.Expect(scene.Actors["a"], IsSame, a)
+			c.Expect(scene.Actors["b"], IsSame, b)
+			c.Expect(len(scene.byProperty), Equals, 2)
+			c.Expect(scene.byProperty[1], Contains, a)
+			c.Expect(scene.byProperty[2], Contains, b)
 		})
 	})
 
 	c.Specify("Add two properties to same actor", func() {
-		p1 := NewProperty(1)
-		p2 := NewProperty(2)
-		scene.Add("a", p1)
-		scene.Add("a", p2)
+		p1,p2 := NewProperty(1),NewProperty(2)
+		a,_ := scene.Add(ActorId("a"))
+		a.Add(p1)
+		a.Add(p2)
 
-		c.Specify("scene contains both properties", func() {
-			c.Expect(len(scene.Properties["a"]), Equals, 2)
-			c.Expect(scene.Properties["a"], Contains, p1)
-			c.Expect(scene.Properties["a"], Contains, p2)
+		c.Specify("actor contains both properties", func() {
+			c.Expect(len(a.properties), Equals, 2)
+			c.Expect(a.properties[1], IsSame, p1)
+			c.Expect(a.properties[2], IsSame, p2)
+		})
+
+		c.Specify("scene contains that actor", func() {
+			c.Expect(len(scene.Actors), Equals, 1)
+			c.Expect(scene.Actors["a"], IsSame, a)
+			c.Expect(len(scene.byProperty), Equals, 2)
+			c.Expect(scene.byProperty[1], Contains, a)
+			c.Expect(scene.byProperty[2], Contains, a)
 		})
 	})
 
-	c.Specify("Add two actors with same property", func() {
+	c.Specify("Add same property to two actors", func() {
 		p1 := NewProperty(1)
-		scene.Add("a", p1)
-		scene.Add("b", p1)
+		a, _ := scene.Add(ActorId("a"))
+		b, _ := scene.Add(ActorId("b"))
+		a.Add(p1)
+		b.Add(p1)
+
+		c.Specify("both actors contain same property", func() {
+			c.Expect(a.properties[1], IsSame, b.properties[1])
+		})
 
 		c.Specify("scene contains both actors", func() {
-			c.Expect(len(scene.Actors[1]), Equals, 2)
-			c.Expect(scene.Actors[1], Contains, Actor("a"))
-			c.Expect(scene.Actors[1], Contains, Actor("b"))
+			c.Expect(len(scene.Actors), Equals, 2)
+			c.Expect(scene.Actors["a"], IsSame, a)
+			c.Expect(scene.Actors["b"], IsSame, b)
+			c.Expect(len(scene.byProperty), Equals, 2)
+			c.Expect(scene.byProperty[1], Contains, a)
+			c.Expect(scene.byProperty[1], Contains, b)
 		})
 
-		c.Specify("scene contains just that property", func() {
-			c.Expect(len(scene.Properties["a"]), Equals, 1)
-			c.Expect(scene.Properties["a"], Contains, p1)
-			c.Expect(len(scene.Properties["b"]), Equals, 1)
-			c.Expect(scene.Properties["b"], Contains, p1)
-		})
 	})
 }
 
 func RemovePropertySpec(c gospec.Context) {
 	scene := NewScene()
 
-	c.Specify("Actor with two properties of same type", func() {
+	c.Specify("Actor with two properties", func() {
 		p1, p2 := NewProperty(1), NewProperty(2)
-		scene.Add("a", p1)
-		scene.Add("a", p2)
+		a, _ := scene.Add(ActorId("a"))
+		a.Add(p1)
+		a.Add(p2)
 
 		c.Specify("removing one", func() {
-			scene.RemoveProperty("a", p1)
+			a.Remove(1)
 
 			c.Specify("actor has only the other property", func() {
-				c.Expect(len(scene.Properties["a"]), Equals, 1)
-				c.Expect(scene.Properties["a"], Contains, p2)
+				c.Expect(len(a.properties), Equals, 1)
+				c.Expect(a.properties[2], IsSame, p2)
 			})
 
-			
 		})
 	})
 }
@@ -175,14 +202,13 @@ func RemoveTypeSpec(c gospec.Context) {
 			c.Expect(len(scene.Properties["a"]), Equals, 1)
 			c.Expect(len(scene.Actors[1]), Equals, 1)
 		})
-		
+
 		c.Specify("returns empty list", func() {
 			c.Expect(len(ret), Equals, 0)
 		})
-		
-		
+
 	})
-	
+
 	c.Specify("Actor with two properties of same type", func() {
 		p1, p2 := NewProperty(1), NewProperty(1)
 		scene.Add("a", p1)
@@ -201,14 +227,13 @@ func RemoveTypeSpec(c gospec.Context) {
 				c.Expect(ret, Contains, p2)
 			})
 		})
-		
-		
+
 	})
 }
 
 func FindSpec(c gospec.Context) {
 	scene := NewScene()
-	
+
 	c.Specify("Find on empty scene returns empty list", func() {
 		result := scene.Find(1)
 		c.Expect(len(result), Equals, 0)
@@ -237,12 +262,11 @@ func FindSpec(c gospec.Context) {
 		scene.Add("b", p1)
 		scene.Add("b", p2)
 
-		
 		c.Specify("requesting shared property returns both", func() {
 			result := scene.Find(1)
 			c.Expect(len(result), Equals, 2)
 		})
-	
+
 		c.Specify("requesting property specific to just one returns that one", func() {
 			result := scene.Find(2)
 			c.Expect(len(result), Equals, 1)

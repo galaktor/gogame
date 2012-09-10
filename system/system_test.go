@@ -39,8 +39,7 @@ func (sys *MySystem)Update(timestep time.Duration) {
 		
 		fmt.Printf("%v %v props:\np0:%+v\np1:%+v\np2:%+v\n",timestep, a, p0, p1, p2) 
 
-//		p1.AtomicReadAndPushTo(p2)
-		p2.In <- p1.pos.PushTo(p2)
+		p2.Pull(p1.pos)
 	}
 }
 
@@ -50,17 +49,10 @@ func (p *Vector3)Add(other Vector3) {
 	p.z += other.z
 }
 
-func (from Vector3)PushTo(to *MyProperty) func(*MyProperty) {
-	return func(p *MyProperty) {
-		p.pos.Add(from)
+func (to *MyProperty)Pull(pos Vector3) {
+	to.In <- func(p *MyProperty) {
+		p.pos.Add(pos)
 	}
-}
-
-func (from *MyProperty) AtomicReadAndPushTo(to *MyProperty) {
-	//// capture local vars in closure for atomicity
-	// not necessary for single value copy, only for several values, i.e. x, y and z
-	//other := from.pos
-	from.In <- from.pos.PushTo(to)
 }
 
 type Vector3 struct {

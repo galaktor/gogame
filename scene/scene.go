@@ -1,114 +1,149 @@
 package scene
 
-type Actor string
+import "fmt"
+import "errors"
 
+type ActorId string
+
+type Actor struct {
+	Id         ActorId
+	properties map[PropertyType]Property
+	s          *Scene
+}
+
+func newActor(id ActorId) *Actor {
+	return &Actor{Id: id, properties: map[PropertyType]Property{}}
+
+}
+
+func (a *Actor) Add(p Property) error {
+	t := p.Type()
+	if v, present := a.properties[t]; present {
+		msg := fmt.Sprintf("actor %v already contains property of type %v", a.Id, t)
+		return errors.New(msg)
+	}
+
+	a.properties[t] = p
+	a.s.cache(a, t)
+
+	return nil
+}
+
+func (a *Actor)Get(p PropertyType) (Property, bool) {
+	prop,present := a.properties[p]
+	return prop,present
+}
+
+func (a *Actor)Remove(t PropertyType) (removed Property,present bool) {
+	removed,present = a.properties[t]
+	delete(a.properties, t)
+	a.s.uncache(a, t)
+	return
+}
+
+// TODO: use actual types as Id instead
+// get type without instance:
+// reflect.TypeOf((*MyType)(nil)).Elem()
+// -> cast nil to wanted type, use reflect Elem() to get type
 type PropertyType uint
 
 type Property interface {
 	Type() PropertyType
 }
 
-// todo: custom, optimized data structure, e.g. binary search tree
 type Scene struct {
-	Actors     map[PropertyType][]Actor
-	Properties map[Actor][]Property
+	byProperty map[PropertyType][]*Actor
+	Actors     map[ActorId]*Actor
 }
 
 func NewScene() *Scene {
-	scene := &Scene{}
-	scene.Actors = map[PropertyType][]Actor{}
-	scene.Properties = map[Actor][]Property{}
-	return scene
+	return &Scene{map[PropertyType][]*Actor{}, map[ActorId]*Actor{}}
 }
 
-func (s Scene) Add(a Actor, p Property) {
-	if _, present := s.Properties[a]; !present {
-		s.Properties[a] = []Property{}
-	}
-	s.Properties[a] = append(s.Properties[a], p)
-
-	if _, present := s.Actors[p.Type()]; !present {
-		s.Actors[p.Type()] = []Actor{}
-	}
-	s.Actors[p.Type()] = append(s.Actors[p.Type()], a)
-}
-
-func (s Scene)RemoveType(a Actor, t PropertyType) (removed []Property) {
-	selector := func(p Property) bool {
-		return p.Type() == t
-	}
-
-	removed = s.RemoveWhere(a, selector)
+func (s Scene) Add(id ActorId) (a *Actor, e error) {
+	a = newActor(ActorId(id))
+	e = s.addActor(a)
 	return
+	
 }
 
-func (s Scene)RemoveProperty(a Actor, toRemove Property) {
-	selector := func(p Property) bool {
-		return p == toRemove
+func (s Scene) addActor(a *Actor) error {
+	if v,present := s.Actors[a.Id]; present {
+		msg := fmt.Sprintf("scene already contains actor with id %v", a.Id)
+		return errors.New(msg)
 	}
 
-	_ = s.RemoveWhere(a, selector)
-	return
+	s.Actors[a.Id] = a
+	for t := range a.properties {
+		s.cache(a, t)
+	}
+
+	return nil
 }
 
-type PropertySelector func(Property) bool
+func (s Scene) Remove(a *Actor) {
+	if actor, present := s.Actors[a.Id]; !present {
+		return
+	}
 
-func (s Scene)RemoveWhere(a Actor, sel PropertySelector) (removed []Property) {	
-	if props,present := s.Properties[a]; present {
-		kept := []Property{}
-		for _,prop := range props {
-			if sel(prop) {
-				removed = append(removed,prop)
-			} else {
-				kept = append(kept,prop)
+	delete(s.Actors, a.Id)
+
+	for t := range a.properties {
+		s.uncache(a, t)
+	}
+}
+
+func (s Scene)cache(a *Actor, t PropertyType) {
+	if _,present := s.byProperty[t]; !present {
+		s.byProperty[t] = []*Actor{}
+	}
+	s.byProperty[t] = append(s.byProperty[t], a)
+}
+
+func (s Scene)uncache(a *Actor, t PropertyType) {
+	if actors,present := s.byProperty[t]; present {
+		newlist := make([]*Actor,len(actors)-1)
+		for i,actor := range actors {
+			// keep all but the uncached one
+			if actor.Id != a.Id {
+				newlist[i] = actor
 			}
 		}
-		s.Properties[a] = kept
+		s.byProperty[t] = newlist
 	}
-
-	return removed
 }
 
+func (s Scene) Find(p ...PropertyType) (result []*Actor) {
+	// opt: exclude actors without first property
+	if actors, present := s.byProperty[p[0]]; present {
+		if len(p) == 1 {
+			// opt: quit now if only looking for one property
+			result = actors
+			return
+		}
 
-
-
-/*
-func (s Scene)Remove(a Actor) {
-	//delete(s.Properties, a)
-
-	// remove actor from all property slices
-}
-*/
-
-func (s Scene) Find(p ...PropertyType) (result []Actor) {
-	if actors, present := s.Actors[p[0]]; present {
 		for _, a := range actors {
-			rest := p[1:]
-			ap := s.Properties[a]
-
-			// opt: if actor prop count < len(p) -> skip actor
-			// WARNING: this assumes that actors only have one of each property type
-			if len(ap) < len(p) {
+			if len(p) > len(a.properties) {
+				// opt: exclude actors with less properties than requested
+				// this assumes that actors only have one of each property type
 				continue
 			}
 
-			all := true
+			// opt: we already checked prop at 0
+			rest := p[1:] 
+			// opt: requested less or equal props than actor has
+			// loop on those rather than all the props of the actor
+			// look until we find a prop that doesn't match
+			hit := true
 			for _, wanted := range rest {
-				this := false
-				for _, exist := range ap {
-					if exist.Type() == wanted {
-						this = true
-					}
-				}
-				if !this {
-					all = false
+				if _,present := a.properties[wanted]; !present {
+					hit = false
 					break
 				}
 			}
-		
-	
-			if all {
-				result = append(result,a)
+
+			if hit {
+				result = append(result, a)
 			}
 		}
 	}

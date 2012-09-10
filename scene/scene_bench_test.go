@@ -8,7 +8,11 @@ func BenchmarkFind(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		n := fmt.Sprintf("%v", i)
-		s.Add(Actor(n), NewProperty(PropertyType(i)))
+
+		a,_ := s.Add(ActorId(n))		
+		a.Add(NewProperty(PropertyType(i)))
+
+		
 	}
 
 	b.ResetTimer()
