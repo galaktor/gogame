@@ -3,28 +3,119 @@ package system
 import (
 	"github.com/orfjackal/gospec"
 	. "github.com/orfjackal/gospec"
-	"../scene")
+	. "../scene"
+	"fmt"
+	"time"
+	"runtime"
+)
 
+// should a system "have a" scene?
+// how to keep orthogonal?
 type MySystem struct {
+	Scene
+}
 
+// TODO: need a nicer way to do this
+func GetProperties(s *Scene, a Actor) (p0, p1, p2 *MyProperty) {
+	for _,prop := range s.Properties[a] {
+		switch prop.Type() {
+		case 0:
+			p0 = prop.(*MyProperty)
+		case 1:
+			p1 = prop.(*MyProperty)
+		case 2:
+			p2 = prop.(*MyProperty)
+		}
+	}
+
+	return
+}
+
+func (sys *MySystem)Update(timestep time.Duration) {
+	// TODO: optimize by performing Find() only when relevant props have been changed
+	actors := sys.Scene.Find(PropertyType(Prop0),PropertyType(Prop1),PropertyType(Prop2))
+	for _,a := range actors {
+		p0,p1,p2 := GetProperties(&sys.Scene, a)
+		
+		fmt.Printf("%v %v props:\np0:%+v\np1:%+v\np2:%+v\n",timestep, a, p0, p1, p2) 
+
+//		p1.AtomicReadAndPushTo(p2)
+		p2.In <- p1.pos.PushTo(p2)
+	}
+}
+
+func (p *Vector3)Add(other Vector3) {
+	p.x += other.x
+	p.y += other.y
+	p.z += other.z
+}
+
+func (from Vector3)PushTo(to *MyProperty) func(*MyProperty) {
+	return func(p *MyProperty) {
+		p.pos.Add(from)
+	}
+}
+
+func (from *MyProperty) AtomicReadAndPushTo(to *MyProperty) {
+	//// capture local vars in closure for atomicity
+	// not necessary for single value copy, only for several values, i.e. x, y and z
+	//other := from.pos
+	from.In <- from.pos.PushTo(to)
+}
+
+type Vector3 struct {
+	x, y, z float32
 }
 
 type MyProperty struct {
-
+	tid PropertyType
+	pos Vector3
+	In chan func(*MyProperty)
 }
 
-func (p *MyProperty)Type() scene.PropertyType {
-	return scene.PropertyType(1)
+func (p *MyProperty)Type() PropertyType {
+	return p.tid
+}
+
+func (p *MyProperty)Start() {
+	go func() {
+		for {
+			f := <- p.In
+			fmt.Printf("In @ %+v\n", p)
+			f(p)
+		}
+	}()
+}
+
+func NewProperty(tid PropertyType) Property {
+	p := &MyProperty{tid,Vector3{1, 2, 3},make(chan func(*MyProperty))}
+	p.Start()
+	return p
 }
 
 
-
+const (
+	Prop0 = iota
+	Prop1
+	Prop2
+)
 
 func StartSpec(c gospec.Context) {
-	s := scene.NewScene()
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	s.Add("a", &MyProperty{})
+	s := NewScene()
 
+	s.Add("a", NewProperty(Prop0))
+	s.Add("a", NewProperty(Prop1))
+	s.Add("a", NewProperty(Prop2))
+	
+	s.Add("b", NewProperty(Prop0))
+	s.Add("b", NewProperty(Prop1))
+	s.Add("b", NewProperty(Prop2))
+
+	sys := &MySystem{*s}
+	// in this example: min duration is ~100us
+	Start(sys, 16 * time.Millisecond)
 
 	c.Specify("I NEED TESTS!", func() {
 		c.Expect(true, Equals, false)
