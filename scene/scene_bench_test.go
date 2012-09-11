@@ -9,7 +9,7 @@ func BenchmarkFind(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		n := fmt.Sprintf("%v", i)
 
-		a,_ := s.Add(ActorId(n))		
+		a := s.Add(ActorId(n))		
 		a.Add(NewProperty(PropertyType(i)))
 
 		

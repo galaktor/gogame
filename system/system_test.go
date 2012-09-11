@@ -1,112 +1,124 @@
 package system
 
 import (
-	"github.com/orfjackal/gospec"
-	. "github.com/orfjackal/gospec"
 	. "../scene"
 	"fmt"
-	"time"
+	"github.com/orfjackal/gospec"
+	. "github.com/orfjackal/gospec"
 	"runtime"
+	"time"
 )
 
-// should a system "have a" scene?
-// how to keep orthogonal?
-type MySystem struct {
-	Scene
+var propt = map[string]PropertyType{
+	"phy": PropertyType(1),
+	"gra": PropertyType(2),
 }
 
-// TODO: need a nicer way to do this
-func GetProperties(s *Scene, a Actor) (p0, p1, p2 *MyProperty) {
-	for _,prop := range s.Properties[a] {
-		switch prop.Type() {
-		case 0:
-			p0 = prop.(*MyProperty)
-		case 1:
-			p1 = prop.(*MyProperty)
-		case 2:
-			p2 = prop.(*MyProperty)
-		}
-	}
-
-	return
+type Graphical struct {
+	Do      chan func(*Graphical)
+	X, Y, Z float32
 }
 
-func (sys *MySystem)Update(timestep time.Duration) {
-	// TODO: optimize by performing Find() only when relevant props have been changed
-	actors := sys.Scene.Find(PropertyType(Prop0),PropertyType(Prop1),PropertyType(Prop2))
-	for _,a := range actors {
-		p0,p1,p2 := GetProperties(&sys.Scene, a)
-		
-		fmt.Printf("%v %v props:\np0:%+v\np1:%+v\np2:%+v\n",timestep, a, p0, p1, p2) 
-
-		p2.Pull(p1.pos)
-	}
+func (g *Graphical) Type() PropertyType {
+	return propt["gra"]
 }
 
-func (p *Vector3)Add(other Vector3) {
-	p.x += other.x
-	p.y += other.y
-	p.z += other.z
+func NewGraphical() *Graphical {
+	g := &Graphical{}
+	g.Do = make(chan func(*Graphical))
+	g.Start()
+	return g
 }
-
-func (to *MyProperty)Pull(pos Vector3) {
-	to.In <- func(p *MyProperty) {
-		p.pos.Add(pos)
-	}
-}
-
-type Vector3 struct {
-	x, y, z float32
-}
-
-type MyProperty struct {
-	tid PropertyType
-	pos Vector3
-	In chan func(*MyProperty)
-}
-
-func (p *MyProperty)Type() PropertyType {
-	return p.tid
-}
-
-func (p *MyProperty)Start() {
+func (g *Graphical) Start() {
 	go func() {
 		for {
-			f := <- p.In
-			fmt.Printf("In @ %+v\n", p)
-			f(p)
+			visit := <-g.Do
+			visit(g)
 		}
 	}()
 }
 
-func NewProperty(tid PropertyType) Property {
-	p := &MyProperty{tid,Vector3{1, 2, 3},make(chan func(*MyProperty))}
+func (g *Graphical) Pull(p *Physical) {
+	// capture variables
+	x, y, z := p.X, p.Y, p.Z
+	g.Do <- func(g *Graphical) {
+		g.X += x
+		g.Y += y
+		g.Z += z
+	}
+}
+
+type Physical struct {
+	Do      chan func(*Physical)
+	X, Y, Z float32
+}
+
+func NewPhysical() *Physical {
+	p := &Physical{}
+	p.Do = make(chan func(*Physical))
 	p.Start()
 	return p
 }
 
+func (p *Physical)Type() PropertyType {
+	return propt["phy"]
+}
 
-const (
-	Prop0 = iota
-	Prop1
-	Prop2
-)
+func (p *Physical) Start() {
+	go func() {
+		for {
+			visit := <-p.Do
+			visit(p)
+		}
+	}()
+}
+
+type CanPullPhysical interface {
+	Pull(p *Physical)
+}
+type CanPushPhysical interface {
+	Push(p CanPullPhysical)
+}
+
+func (p *Physical) Push(to CanPullPhysical) {
+	to.Pull(p)
+}
+
+func (p *Physical) PushSync(to CanPullPhysical) {
+	p.Do <- func(p *Physical) { p.Push(to) }
+}
+
+type PhysicsSystem struct {
+}
+
+func (p *PhysicsSystem) Update(timestep time.Duration) {
+	fmt.Printf("updating: %v\n", timestep)
+	for _, actor := range s.Find(propt["phy"], propt["gra"]) {
+		p := actor.Get(propt["phy"]).(*Physical)
+		g := actor.Get(propt["gra"]).(*Graphical)
+		fmt.Printf("got: %+v %+v\n", p, g)
+		p.Push(g)
+	}
+
+}
+
+var s = NewScene()
 
 func StartSpec(c gospec.Context) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	s := NewScene()
+	a := s.Add(ActorId("a"))
+	p := NewPhysical()
+	p.X, p.Y, p.Z = 1, 2, 3
+	p.Start()
+	a.Add(p)
 
-	s.Add("a", NewProperty(Prop0))
-	s.Add("a", NewProperty(Prop1))
-	s.Add("a", NewProperty(Prop2))
+	g := NewGraphical()
+	g.Start()
+	a.Add(g)
 	
-	s.Add("b", NewProperty(Prop0))
-	s.Add("b", NewProperty(Prop1))
-	s.Add("b", NewProperty(Prop2))
-
-	sys := &MySystem{*s}
-	// in this example: min duration is ~100us
+	sys := &PhysicsSystem{}
+	
 	Start(sys, 16 * time.Millisecond)
 
 	c.Specify("I NEED TESTS!", func() {

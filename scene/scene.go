@@ -60,11 +60,16 @@ func NewScene() *Scene {
 	return &Scene{map[PropertyType][]*Actor{}, map[ActorId]*Actor{}}
 }
 
-func (s *Scene) Add(id ActorId) (a *Actor, e error) {
-	a = newActor(ActorId(id))
+func (s *Scene) Add(id ActorId) *Actor {
+	a := newActor(ActorId(id))
+	e := s.addActor(a)
 	a.s = s
-	e = s.addActor(a)
-	return
+
+	if e != nil {
+		panic(e.Error())
+	}
+
+	return a
 	
 }
 
