@@ -20,7 +20,7 @@ func (p *SomeProperty) Type() PropertyType {
 
 func CtorSpec(c gospec.Context) {
 	c.Specify("New scene", func() {
-		scene := NewScene()
+		scene := New()
 
 		c.Specify("has zero actors", func() {
 			c.Expect(len(scene.Actors), Equals, 0)
@@ -33,7 +33,7 @@ func CtorSpec(c gospec.Context) {
 }
 
 func AddSpec(c gospec.Context) {
-	scene := NewScene()
+	scene := New()
 
 	c.Specify("New actor always has reference to creating scene", func() {
 		a := scene.Add("a")
@@ -139,7 +139,7 @@ func AddSpec(c gospec.Context) {
 }
 
 func RemovePropertySpec(c gospec.Context) {
-	scene := NewScene()
+	scene := New()
 
 	c.Specify("Actor with two properties", func() {
 		p1, p2 := NewProperty(1), NewProperty(2)
@@ -160,7 +160,7 @@ func RemovePropertySpec(c gospec.Context) {
 }
 
 func RemoveTypeSpec(c gospec.Context) {
-	scene := NewScene()
+	scene := New()
 
 	c.Specify("Actor with two properties of different type", func() {
 		p1, p2 := NewProperty(1), NewProperty(2)
@@ -213,7 +213,7 @@ func RemoveTypeSpec(c gospec.Context) {
 }
 
 func FindSpec(c gospec.Context) {
-	scene := NewScene()
+	scene := New()
 
 	c.Specify("Find on empty scene returns empty list", func() {
 		result := scene.Find(1)

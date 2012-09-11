@@ -1,3 +1,6 @@
+/*
+ A simple demonstration of how to create a scene and launch systems.
+*/
 package main
 
 import (

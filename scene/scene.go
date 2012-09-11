@@ -1,8 +1,13 @@
+/*
+ Contains basic types and function required to manage a scene. 
+*/
 package scene
 
 import "fmt"
 import "errors"
 
+// An actor has 0 or more Properties, which represent a type of data
+// that the describes the actor.
 type Actor struct {
 	Id         string
 	properties map[PropertyType]Property
@@ -14,6 +19,9 @@ func newActor(id string) *Actor {
 
 }
 
+// Adds a property to the actor. Returns an error if the Actor already
+// has a property of that type id. Actors can only hold one property
+// of a given type.
 func (a *Actor) Add(p Property) error {
 	t := p.Type()
 	if _, present := a.properties[t]; present {
@@ -27,10 +35,16 @@ func (a *Actor) Add(p Property) error {
 	return nil
 }
 
+// Retrieves a property of a given type from an actor.
+// Returns nil if the actor does not have a property of
+// the requested type.
 func (a *Actor)Get(p PropertyType) Property {
 	return a.properties[p]
 }
 
+// Removes a property from an actor and returns a pointer to the
+// removed property. "present" will be false, and removed nil if
+// the property type was not found on teh actor.
 func (a *Actor)Remove(t PropertyType) (removed Property,present bool) {
 	removed,present = a.properties[t]
 	delete(a.properties, t)
@@ -44,19 +58,31 @@ func (a *Actor)Remove(t PropertyType) (removed Property,present bool) {
 // -> cast nil to wanted type, use reflect Elem() to get type
 type PropertyType uint
 
+// An interface that all properties in the scene need to implement.
 type Property interface {
 	Type() PropertyType
 }
 
+// A scene has Actors, identifiable by a string (unique per scene).
+// The scene also indexes actors by their property types for faster
+// lookup in Find()
+// Properties should hold /only/ data, and some functions related 
+// to managing that data, no game or system related logic.
 type Scene struct {
 	byProperty map[PropertyType][]*Actor
 	Actors     map[string]*Actor
 }
 
-func NewScene() *Scene {
+// Creates a new, empty scene.
+func New() *Scene {
 	return &Scene{map[PropertyType][]*Actor{}, map[string]*Actor{}}
 }
 
+// Adds an actor with the given id to the scene and returns a pointer to it.
+// Will panic if the scene already contains an actor with that id.
+// Actor contains a reference to the scene that created it in order to
+// keep the scene's property index up-to-date when properties are added or
+// removed on the actor.
 func (s *Scene) Add(id string) *Actor {
 	a := newActor(id)
 	e := s.addActor(a)
@@ -84,6 +110,7 @@ func (s Scene) addActor(a *Actor) error {
 	return nil
 }
 
+// Removes a given actor from the scene.
 func (s Scene) Remove(a *Actor) {
 	if _, present := s.Actors[a.Id]; !present {
 		return
@@ -117,6 +144,11 @@ func (s Scene)uncache(a *Actor, t PropertyType) {
 	}
 }
 
+// Allows for very specialized query of the sccene by property type.
+// Given one or more property types, will return a list of all actors
+// that contain every given type. For very large scenes this will
+// probably have to be improved in many ways, possibly by using a
+// binary search tree.
 func (s Scene) Find(p ...PropertyType) (result []*Actor) {
 	// opt: exclude actors without first property
 	if actors, present := s.byProperty[p[0]]; present {

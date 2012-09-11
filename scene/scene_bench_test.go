@@ -4,7 +4,7 @@ import "testing"
 import "fmt"
 
 func BenchmarkFind(b *testing.B) {
-	s := NewScene()
+	s := New()
 
 	for i := 0; i < b.N; i++ {
 		n := fmt.Sprintf("%v", i)
