@@ -3,6 +3,7 @@ package scene
 import (
 	"github.com/orfjackal/gospec"
 	. "github.com/orfjackal/gospec"
+	"strings"
 )
 
 type SomeProperty struct {
@@ -48,6 +49,7 @@ func AddSpec(c gospec.Context) {
 		c.Specify("scene contains just that one actor", func() {
 			c.Expect(len(scene.Actors), Equals, 1)
 			c.Expect(scene.Actors["a"], IsSame, a)
+
 			c.Expect(len(scene.byProperty), Equals, 1)
 			c.Expect(scene.byProperty[1], Contains, a)
 		})
@@ -60,26 +62,24 @@ func AddSpec(c gospec.Context) {
 
 	c.Specify("Add two actors with same id", func() {
 		scene.Add(ActorId("foo"))
-		_,err := scene.Add(ActorId("foo"))
+		_,e := scene.Add(ActorId("foo"))
 		
 		c.Specify("returns error containing the duplicate actor id", func() {
-			c.Expect(err, Not(IsNil))
-			// TODO: test string ending with foo
-			c.Expect(true, Equals, false)
+			c.Expect(e, Not(IsNil))
+			c.Expect(e, Satisfies, strings.Contains(e.Error(), "foo"))
 		})
 		
 	})
 
 	c.Specify("Add two properties of same type to one actor", func() {
 		a,_ := scene.Add(ActorId("a"))
-		p1, p2 := NewProperty(1), NewProperty(1)
+		p1, p2 := NewProperty(42), NewProperty(42)
 		a.Add(p1)
-		err := a.Add(p2)
+		e := a.Add(p2)
 
 		c.Specify("returns error contains the duplicate property type id", func() {
-			c.Expect(err, Not(IsNil))
-			// TODO: test string ending with type id
-			c.Expect(true, Equals, false)
+			c.Expect(e, Not(IsNil))
+			c.Expect(e, Satisfies, strings.Contains(e.Error(), "42"))
 		})
 	})
 
