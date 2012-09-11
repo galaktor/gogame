@@ -62,8 +62,9 @@ func AddSpec(c gospec.Context) {
 		scene.Add(ActorId("foo"))
 		_,err := scene.Add(ActorId("foo"))
 		
-		c.Specify("returns error containing the duplicate actor id - TEST ME!", func() {
+		c.Specify("returns error containing the duplicate actor id", func() {
 			c.Expect(err, Not(IsNil))
+			// TODO: test string ending with foo
 			c.Expect(true, Equals, false)
 		})
 		
@@ -75,8 +76,9 @@ func AddSpec(c gospec.Context) {
 		a.Add(p1)
 		err := a.Add(p2)
 
-		c.Specify("returns error contains the duplicate property type id - TEST ME!", func() {
+		c.Specify("returns error contains the duplicate property type id", func() {
 			c.Expect(err, Not(IsNil))
+			// TODO: test string ending with type id
 			c.Expect(true, Equals, false)
 		})
 	})
