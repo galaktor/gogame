@@ -18,7 +18,7 @@ func newActor(id ActorId) *Actor {
 
 func (a *Actor) Add(p Property) error {
 	t := p.Type()
-	if v, present := a.properties[t]; present {
+	if _, present := a.properties[t]; present {
 		msg := fmt.Sprintf("actor %v already contains property of type %v", a.Id, t)
 		return errors.New(msg)
 	}
@@ -60,15 +60,16 @@ func NewScene() *Scene {
 	return &Scene{map[PropertyType][]*Actor{}, map[ActorId]*Actor{}}
 }
 
-func (s Scene) Add(id ActorId) (a *Actor, e error) {
+func (s *Scene) Add(id ActorId) (a *Actor, e error) {
 	a = newActor(ActorId(id))
+	a.s = s
 	e = s.addActor(a)
 	return
 	
 }
 
 func (s Scene) addActor(a *Actor) error {
-	if v,present := s.Actors[a.Id]; present {
+	if _,present := s.Actors[a.Id]; present {
 		msg := fmt.Sprintf("scene already contains actor with id %v", a.Id)
 		return errors.New(msg)
 	}
@@ -82,7 +83,7 @@ func (s Scene) addActor(a *Actor) error {
 }
 
 func (s Scene) Remove(a *Actor) {
-	if actor, present := s.Actors[a.Id]; !present {
+	if _, present := s.Actors[a.Id]; !present {
 		return
 	}
 
