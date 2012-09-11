@@ -35,7 +35,7 @@ after push: &{Do:0xf840001aa0 X:4 Y:8 Z:12} &{Do:0xf840001af0 X:2 Y:4 Z:6}
 ```
 
 It's really just debug prints for me, but it may be interesting to you, too.
-"movement" and "render" represent an update by the MovementSystem and RenderSystem, which are set to tick about every 16ms and 32ms respectively. The graphcis system need to transfer the positional data from the Physical component into the Graphical component before it renders, which is the "push" part you can see there. It prints the physical and graphcial properties "before" and "after" the push so compare values at that point. Note that every single system and component runs in it's own goroutine and communicate via channels, making the entire thing work without a single mutex.
+"movement" and "render" represent an update by the MovementSystem and RenderSystem, which are set to tick about every 16ms and 32ms respectively. The graphcis system needs to transfer the positional data from the Physical component into the Graphical component before it renders, which is the "push" part you can see there. It prints the physical and graphcial properties "before" and "after" the push to compare values at that point. Note that every single system and component runs in it's own goroutine and communicate via channels, making the entire thing work without a single mutex.
 
 This is really just the beginning, when the code grows I'll add better documentation and demos.
 
