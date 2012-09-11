@@ -3,7 +3,6 @@ package main
 import (
 	"time"
 	"runtime"
-	"fmt"
 
 	"./physics"
 	"./graphics"
@@ -13,24 +12,14 @@ import (
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	// stutter!
-	s := scene.NewScene()
+	s := scene.New()
 
-	// get rid of ActorId alias
-	a := s.Add(scene.ActorId("a"))
-
-	// make them start automatically
-	p := physics.Prop()
-	g := graphics.Prop()
-
-	a.Add(p)
-	a.Add(g)
-
-	// better: physics.System()
-	// even better: physics.Start()
 	physics.Start(s)
 	graphics.Start(s)
+
+	a := s.Add("a")
+	a.Add(physics.Prop())
+	a.Add(graphics.Prop())
 	
-	fmt.Println("sleeping")
 	time.Sleep(5 * time.Second)
 }

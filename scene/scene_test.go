@@ -36,14 +36,14 @@ func AddSpec(c gospec.Context) {
 	scene := NewScene()
 
 	c.Specify("New actor always has reference to creating scene", func() {
-		a := scene.Add(ActorId("a"))
+		a := scene.Add("a")
 		
 		c.Expect(a.s, IsSame, scene)
 	})
 
 	c.Specify("Add one actor with one property", func() {
 		p1 := NewProperty(1)
-		a := scene.Add(ActorId("a"))
+		a := scene.Add("a")
 		a.Add(p1)
 
 		c.Specify("scene contains just that one actor", func() {
@@ -59,21 +59,9 @@ func AddSpec(c gospec.Context) {
 			c.Expect(a.properties[1], IsSame, p1)
 		})
 	})
-/*
-	c.Specify("Add two actors with same id", func() {
-		scene.Add(ActorId("foo"))
-		_ = scene.Add(ActorId("foo"))
-		
-		c.Specify("returns error containing the duplicate actor id", func() {
-			c.Expect(e, Not(IsNil))
-			c.Expect(e, Satisfies, strings.Contains(e.Error(), "foo"))
-		})
-		
-	})
-*/
 
 	c.Specify("Add two properties of same type to one actor", func() {
-		a := scene.Add(ActorId("a"))
+		a := scene.Add("a")
 		p1, p2 := NewProperty(42), NewProperty(42)
 		a.Add(p1)
 		e := a.Add(p2)
@@ -86,7 +74,7 @@ func AddSpec(c gospec.Context) {
 
 	c.Specify("Add two actors with different properties", func() {
 		p1, p2 := NewProperty(1), NewProperty(2)
-		a,b := scene.Add(ActorId("a")),scene.Add(ActorId("b"))
+		a,b := scene.Add("a"),scene.Add("b")
 		a.Add(p1)
 		b.Add(p2)
 
@@ -109,7 +97,7 @@ func AddSpec(c gospec.Context) {
 
 	c.Specify("Add two properties to same actor", func() {
 		p1,p2 := NewProperty(1),NewProperty(2)
-		a := scene.Add(ActorId("a"))
+		a := scene.Add("a")
 		a.Add(p1)
 		a.Add(p2)
 
@@ -130,7 +118,7 @@ func AddSpec(c gospec.Context) {
 
 	c.Specify("Add same property to two actors", func() {
 		p1 := NewProperty(1)
-		a,b := scene.Add(ActorId("a")),scene.Add(ActorId("b"))
+		a,b := scene.Add("a"),scene.Add("b")
 		a.Add(p1)
 		b.Add(p1)
 
@@ -155,7 +143,7 @@ func RemovePropertySpec(c gospec.Context) {
 
 	c.Specify("Actor with two properties", func() {
 		p1, p2 := NewProperty(1), NewProperty(2)
-		a := scene.Add(ActorId("a"))
+		a := scene.Add("a")
 		a.Add(p1)
 		a.Add(p2)
 
@@ -176,7 +164,7 @@ func RemoveTypeSpec(c gospec.Context) {
 
 	c.Specify("Actor with two properties of different type", func() {
 		p1, p2 := NewProperty(1), NewProperty(2)
-		a := scene.Add(ActorId("a"))
+		a := scene.Add("a")
 		a.Add(p1)
 		a.Add(p2)
 
@@ -209,7 +197,7 @@ func RemoveTypeSpec(c gospec.Context) {
 
 	c.Specify("Removing same actor twice", func() {
 		p1 := NewProperty(1)
-		a,b := scene.Add(ActorId("a")),scene.Add(ActorId("b"))
+		a,b := scene.Add("a"),scene.Add("b")
 		a.Add(p1)
 		b.Add(p1)
 		scene.Remove(a)
@@ -234,7 +222,7 @@ func FindSpec(c gospec.Context) {
 
 	c.Specify("One actor, one property", func() {
 		p1 := NewProperty(1)
-		a := scene.Add(ActorId("a"))
+		a := scene.Add("a")
 		a.Add(p1)
 
 		c.Specify("for that property returns that actor", func() {
@@ -251,7 +239,7 @@ func FindSpec(c gospec.Context) {
 
 	c.Specify("Two actors, sharing one property", func() {
 		p1,p2 := NewProperty(1),NewProperty(2)
-		a,b := scene.Add(ActorId("a")),scene.Add(ActorId("b"))
+		a,b := scene.Add("a"),scene.Add("b")
 		a.Add(p1)
 		b.Add(p1)
 		b.Add(p2)

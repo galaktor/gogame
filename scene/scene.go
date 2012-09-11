@@ -3,15 +3,13 @@ package scene
 import "fmt"
 import "errors"
 
-type ActorId string
-
 type Actor struct {
-	Id         ActorId
+	Id         string
 	properties map[PropertyType]Property
 	s          *Scene
 }
 
-func newActor(id ActorId) *Actor {
+func newActor(id string) *Actor {
 	return &Actor{Id: id, properties: map[PropertyType]Property{}}
 
 }
@@ -52,15 +50,15 @@ type Property interface {
 
 type Scene struct {
 	byProperty map[PropertyType][]*Actor
-	Actors     map[ActorId]*Actor
+	Actors     map[string]*Actor
 }
 
 func NewScene() *Scene {
-	return &Scene{map[PropertyType][]*Actor{}, map[ActorId]*Actor{}}
+	return &Scene{map[PropertyType][]*Actor{}, map[string]*Actor{}}
 }
 
-func (s *Scene) Add(id ActorId) *Actor {
-	a := newActor(ActorId(id))
+func (s *Scene) Add(id string) *Actor {
+	a := newActor(id)
 	e := s.addActor(a)
 	a.s = s
 
