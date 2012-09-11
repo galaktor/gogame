@@ -29,9 +29,8 @@ func (a *Actor) Add(p Property) error {
 	return nil
 }
 
-func (a *Actor)Get(p PropertyType) (Property, bool) {
-	prop,present := a.properties[p]
-	return prop,present
+func (a *Actor)Get(p PropertyType) Property {
+	return a.properties[p]
 }
 
 func (a *Actor)Remove(t PropertyType) (removed Property,present bool) {

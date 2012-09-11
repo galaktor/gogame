@@ -92,7 +92,12 @@ type PhysicsSystem struct {
 }
 
 func (p *PhysicsSystem) Update(timestep time.Duration) {
-	fmt.Printf("updating: %v\n", timestep)
+	// get specific actor
+	actor := s.Actors["a"]
+	phy := actor.Get(propt["phy"]).(*Physical)
+	phy.X, phy.Y, phy.Z = 2, 3, 4
+
+	// get all actors with certain props
 	for _, actor := range s.Find(propt["phy"], propt["gra"]) {
 		p := actor.Get(propt["phy"]).(*Physical)
 		g := actor.Get(propt["gra"]).(*Graphical)
@@ -109,7 +114,7 @@ func StartSpec(c gospec.Context) {
 
 	a := s.Add(ActorId("a"))
 	p := NewPhysical()
-	p.X, p.Y, p.Z = 1, 2, 3
+//	p.X, p.Y, p.Z = 1, 2, 3
 	p.Start()
 	a.Add(p)
 
