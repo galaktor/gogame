@@ -209,7 +209,9 @@ func RemoveTypeSpec(c gospec.Context) {
 	c.Specify("Removing same actor twice", func() {
 		p1 := NewProperty(1)
 		a,_ := scene.Add(ActorId("a"))
+		a.Add(p1)
 		b,_ := scene.Add(ActorId("b"))
+		b.Add(p1)
 		scene.Remove(a)
 		scene.Remove(a)
 
@@ -217,7 +219,7 @@ func RemoveTypeSpec(c gospec.Context) {
 			c.Expect(len(scene.Actors), Equals, 1)
 			c.Expect(scene.Actors["b"], IsSame, b)
 			c.Expect(len(a.properties), Equals, 1)
-			c.Expect(a.properties, Contains, p1)
+			c.Expect(a.properties[1], IsSame, p1)
 		})
 	})
 }

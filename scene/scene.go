@@ -103,11 +103,12 @@ func (s Scene)cache(a *Actor, t PropertyType) {
 
 func (s Scene)uncache(a *Actor, t PropertyType) {
 	if actors,present := s.byProperty[t]; present {
-		newlist := make([]*Actor,len(actors)-1)
-		for i,actor := range actors {
+		// TODO: pre-allocate right size rather than constant resizing
+		newlist := []*Actor{}
+		for _,actor := range actors {
 			// keep all but the uncached one
 			if actor.Id != a.Id {
-				newlist[i] = actor
+				newlist = append(newlist,actor)
 			}
 		}
 		s.byProperty[t] = newlist
