@@ -12,13 +12,6 @@ import (
 )
 
 func StartSpec(c gospec.Context) {
-	// TO TEST:
-
-	// not sure if this can reliably be tested
-	// set GOMAXPROCS high and verify lock to one thread
-	// compare without lock thread
-	// from N runs there should at least be one case where the tid is different
-	
 	sys := NewSystem()
 
 	c.Specify("When initialising a system", func() {
