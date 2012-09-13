@@ -18,11 +18,15 @@ func main() {
 	s := scene.New()
 
 	physics.Start(s)
-	graphics.Start(s)
+	render := graphics.Start(s)
 
 	a := s.Add("a")
-	a.Add(physics.Prop())
-	a.Add(graphics.Prop())
+	a.Add(physics.NewPos())
+	a.Add(graphics.NewMesh())
 	
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
+
+	render.Stop <- true
+	println("waiting for render system to exit")
+	<-render.Stop
 }
