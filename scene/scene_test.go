@@ -1,9 +1,10 @@
 package scene
 
 import (
+	"strings"	
+
 	"github.com/orfjackal/gospec"
 	. "github.com/orfjackal/gospec"
-	"strings"
 )
 
 type SomeProperty struct {
