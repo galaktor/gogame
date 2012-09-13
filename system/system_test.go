@@ -118,8 +118,7 @@ func StartSpec(c gospec.Context) {
 
 		})
 
-		c.Specify("is FALSE then Init(), Update() and Exit() only ever ran on one and the same thread", func() {
-
+		c.Specify("is FALSE", func() {
 			Start(sys, false)
 
 			c.Specify("either Init(), Update() or Exit() ran on more than one thread", func() {
