@@ -4,24 +4,23 @@
 package scene
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 )
-
 
 // A scene has Actors, identifiable by a string (unique per scene).
 // The scene also indexes actors by their property types for faster
 // lookup in Find()
 // Properties should hold /only/ data, and some functions related 
 // to managing that data, no game or system related logic.
-type Scene struct {
-	byProperty map[PropertyType][]*Actor
-	Actors     map[string]*Actor
+type S struct {
+	byProperty map[PType][]*A
+	Actors     map[string]*A
 }
 
 // Creates a new, empty scene.
-func New() *Scene {
-	return &Scene{map[PropertyType][]*Actor{}, map[string]*Actor{}}
+func New() *S {
+	return &S{map[PType][]*A{}, map[string]*A{}}
 }
 
 // Adds an actor with the given id to the scene and returns a pointer to it.
@@ -29,7 +28,7 @@ func New() *Scene {
 // Actor contains a reference to the scene that created it in order to
 // keep the scene's property index up-to-date when properties are added or
 // removed on the actor.
-func (s *Scene) Add(id string) *Actor {
+func (s *S) Add(id string) *A {
 	a := newActor(id)
 	e := s.addActor(a)
 	a.s = s
@@ -42,7 +41,7 @@ func (s *Scene) Add(id string) *Actor {
 	
 }
 
-func (s Scene) addActor(a *Actor) error {
+func (s S) addActor(a *A) error {
 	if _,present := s.Actors[a.Id]; present {
 		msg := fmt.Sprintf("scene already contains actor with id %v", a.Id)
 		return errors.New(msg)
@@ -57,7 +56,7 @@ func (s Scene) addActor(a *Actor) error {
 }
 
 // Removes a given actor from the scene.
-func (s Scene) Remove(a *Actor) {
+func (s S) Remove(a *A) {
 	if _, present := s.Actors[a.Id]; !present {
 		return
 	}
@@ -69,21 +68,21 @@ func (s Scene) Remove(a *Actor) {
 	}
 }
 
-func (s Scene)cache(a *Actor, t PropertyType) {
-	if _,present := s.byProperty[t]; !present {
-		s.byProperty[t] = []*Actor{}
+func (s S) cache(a *A, t PType) {
+	if _, present := s.byProperty[t]; !present {
+		s.byProperty[t] = []*A{}
 	}
 	s.byProperty[t] = append(s.byProperty[t], a)
 }
 
-func (s Scene)uncache(a *Actor, t PropertyType) {
-	if actors,present := s.byProperty[t]; present {
+func (s S) uncache(a *A, t PType) {
+	if actors, present := s.byProperty[t]; present {
 		// TODO: pre-allocate right size rather than constant resizing
-		newlist := []*Actor{}
-		for _,actor := range actors {
+		newlist := []*A{}
+		for _, actor := range actors {
 			// keep all but the uncached one
 			if actor.Id != a.Id {
-				newlist = append(newlist,actor)
+				newlist = append(newlist, actor)
 			}
 		}
 		s.byProperty[t] = newlist
@@ -95,7 +94,7 @@ func (s Scene)uncache(a *Actor, t PropertyType) {
 // that contain every given type. For very large scenes this will
 // probably have to be improved in many ways, possibly by using a
 // binary search tree.
-func (s Scene) Find(p ...PropertyType) (result []*Actor) {
+func (s S) Find(p ...PType) (result []*A) {
 	// opt: exclude actors without first property
 	if actors, present := s.byProperty[p[0]]; present {
 		if len(p) == 1 {
@@ -112,13 +111,13 @@ func (s Scene) Find(p ...PropertyType) (result []*Actor) {
 			}
 
 			// opt: we already checked prop at 0
-			rest := p[1:] 
+			rest := p[1:]
 			// opt: requested less or equal props than actor has
 			// loop on those rather than all the props of the actor
 			// look until we find a prop that doesn't match
 			hit := true
 			for _, wanted := range rest {
-				if _,present := a.properties[wanted]; !present {
+				if _, present := a.properties[wanted]; !present {
 					hit = false
 					break
 				}

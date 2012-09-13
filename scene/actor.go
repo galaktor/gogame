@@ -1,27 +1,27 @@
 package scene
 
 import (
-	"fmt"
 	"errors"
-	)
+	"fmt"
+)
 
 // An actor has 0 or more Properties, which represent a type of data
 // that the describes the actor.
-type Actor struct {
+type A struct {
 	Id         string
-	properties map[PropertyType]Property
-	s          *Scene
+	properties map[PType]P
+	s          *S
 }
 
-func newActor(id string) *Actor {
-	return &Actor{Id: id, properties: map[PropertyType]Property{}}
+func newActor(id string) *A {
+	return &A{Id: id, properties: map[PType]P{}}
 
 }
 
 // Adds a property to the actor. Returns an error if the Actor already
 // has a property of that type id. Actors can only hold one property
 // of a given type.
-func (a *Actor) Add(p Property) error {
+func (a *A) Add(p P) error {
 	t := p.Type()
 	if _, present := a.properties[t]; present {
 		msg := fmt.Sprintf("actor %v already contains property of type %v", a.Id, t)
@@ -37,14 +37,14 @@ func (a *Actor) Add(p Property) error {
 // Retrieves a property of a given type from an actor.
 // Returns nil if the actor does not have a property of
 // the requested type.
-func (a *Actor)Get(p PropertyType) Property {
+func (a *A)Get(p PType) P {
 	return a.properties[p]
 }
 
 // Removes a property from an actor and returns a pointer to the
 // removed property. "present" will be false, and removed nil if
 // the property type was not found on teh actor.
-func (a *Actor)Remove(t PropertyType) (removed Property,present bool) {
+func (a *A)Remove(t PType) (removed P,present bool) {
 	removed,present = a.properties[t]
 	delete(a.properties, t)
 	a.s.uncache(a, t)

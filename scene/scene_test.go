@@ -7,18 +7,6 @@ import (
 	. "github.com/orfjackal/gospec"
 )
 
-type SomeProperty struct {
-	tid PropertyType
-}
-
-func NewProperty(t PropertyType) Property {
-	return &SomeProperty{t}
-}
-
-func (p *SomeProperty) Type() PropertyType {
-	return p.tid
-}
-
 func CtorSpec(c gospec.Context) {
 	c.Specify("New scene", func() {
 		scene := New()
@@ -264,4 +252,16 @@ func FindSpec(c gospec.Context) {
 			c.Expect(len(result), Equals, 0)
 		})
 	})
+}
+
+type SomeProperty struct {
+	tid PType
+}
+
+func NewProperty(t PType) P {
+	return &SomeProperty{t}
+}
+
+func (p *SomeProperty) Type() PType {
+	return p.tid
 }

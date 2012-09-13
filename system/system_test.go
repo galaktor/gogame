@@ -121,9 +121,9 @@ func StartSpec(c gospec.Context) {
 		c.Specify("is FALSE", func() {
 			Start(sys, false)
 
-			c.Specify("either Init(), Update() or Exit() ran on more than one thread", func() {
+			c.Specify("either Init(), Update() or Exit() have ran on AT LEAST one thread", func() {
 				allTids := len(sys.initTids) + len(sys.updateTids) + len(sys.exitTids)
-				c.Expect(allTids, Satisfies, allTids > 3)
+				c.Expect(allTids, Satisfies, allTids >= 3)
 			})
 		})
 

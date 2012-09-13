@@ -4,9 +4,9 @@ package scene
 // get type without instance:
 // reflect.TypeOf((*MyType)(nil)).Elem()
 // -> cast nil to wanted type, use reflect Elem() to get type
-type PropertyType uint
+type PType uint
 
 // An interface that all properties in the scene need to implement.
-type Property interface {
-	Type() PropertyType
+type P interface {
+	Type() PType
 }

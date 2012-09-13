@@ -10,13 +10,13 @@ func BenchmarkFind(b *testing.B) {
 		n := fmt.Sprintf("%v", i)
 
 		a := s.Add(n)
-		a.Add(NewProperty(PropertyType(i)))
+		a.Add(NewProperty(PType(i)))
 
 		
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		s.Find(PropertyType(b.N))
+		s.Find(PType(b.N))
 	}
 }
