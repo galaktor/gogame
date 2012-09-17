@@ -1,114 +1,167 @@
 package graphics
 
 import (
-	"fmt"
-	"time"
 	"errors"
+	"fmt"
+	"runtime"
+	"time"
 
-	"./gogre3d"
-	"../physics"
+	"github.com/galaktor/gogre3d"
+
 	"../../scene"
+	"../physics"
 )
 
 type RenderSystem struct {
-	s *scene.S
-	// TODO: prop ids used
+	do      chan func(*RenderSystem)
+	running bool
+	scene   *scene.S
 
-	r *gogre3d.Root
-	w *gogre3d.RenderWindow
-	Stop chan bool
+	// ogre internals
+	r  gogre3d.Root
+	w  gogre3d.RenderWindow
+	sm gogre3d.SceneManager
 }
 
-func renderSystem(s *scene.S) *RenderSystem {
-	return &RenderSystem{s:s,Stop:make(chan bool)}
+func New(s *scene.S) *RenderSystem {
+	sys := &RenderSystem{do:make(chan func(*RenderSystem))}
+
+	sys.Start(s)
+
+	sys.Syn()
+	
+	return sys
 }
 
-func (r *RenderSystem)Init() error {
-	root := gogre3d.NewRoot("./graphics/plugins.cfg", "./graphics/ogre.cfg", "ogre.log")
-	r.r = &root
+func (sys *RenderSystem)Start(s *scene.S) {
+	if !sys.running {
+		sys.scene = s
 
-	if cancel := !r.r.ShowConfigDialog(); cancel {
-		r.r.Delete()
-		return errors.New("ogre dialog cancelled")
+		// begin handling of events
+		go func() {
+			// IMPORTANT: ogre needs to stay on one thread
+			runtime.LockOSThread()
+
+			// do ogre setup
+			if err := sys.setup(); err != nil {
+				panic(err.Error())
+			}
+
+			sys.running = true
+
+			// start command handler
+			for sys.running {
+				visit := <-sys.do
+				visit(sys)
+			}
+
+			sys.teardown()
+		}()
+
+		sys.Syn()
+
+		// launch update timer
+		ticker := time.Tick(40 * time.Millisecond)
+		go func() {
+			last := time.Now()
+			for sys.running {
+				now := <-ticker
+				sys.tick(now.Sub(last))
+				last = now
+			}
+		}()
+
 	}
+}
 
-	window := r.r.Initialise(true, "MyWindow")
-	r.w = &window
+// TODO: make synchronous, wait until teardown complete!
+func (sys *RenderSystem) Stop() {
+	if sys.running {
+		sys.do <- func(sys *RenderSystem) {
+			sys.running = false
+		}
+	}
+}
 
-	sm := r.r.CreateSceneManager()
-	cam := sm.CreateCamera("MyCamera")
-	cam.SetPosition(0, 0, 80)
-	cam.LookAt(0, 0, -300)
-	cam.SetNearClipDistance(5)
+func (sys *RenderSystem)tick(timestep time.Duration) {
+	// is this a copied value, or not?
+	ts := timestep
+	sys.do <- func(sys *RenderSystem) {
+		sys.Update(ts)
+	}
+}
 
-	vp := window.AddViewport(cam)
-	vp.SetBackgroundColour(0, 0, 0, 0)
+func (sys *RenderSystem) Syn() {
+	ack := make(chan bool)
+	sys.do <- func(sys *RenderSystem) {
+		ack <- true
+	}
+	<-ack
+	close(ack)
+}
+
+func (r *RenderSystem)setup() error {
+	r.r = gogre3d.NewRoot("", "", "ogre.log")
 	
-	w, h := vp.GetActualWidth(), vp.GetActualHeight()
-	cam.SetAspectRatio(w / h)
-	
+	// setup OpenGL
+	r.r.LoadPlugin("RenderSystem_GL")
+	rs := r.r.GetRenderSystemByName("OpenGL Rendering Subsystem")
+	rs.SetConfigOption("Full Screen", "No")
+	rs.SetConfigOption("VSync", "No")
+	rs.SetConfigOption("Video Mode", "800 x 600 @ 32-bit")
+	r.r.SetRenderSystem(rs)
+
+	r.w = r.r.Initialise(true, "gogame demo")
+	r.sm = r.r.CreateSceneManager()
+
 	tm := gogre3d.GetTextureManager()
 	tm.SetDefaultNumMipmaps(5)
 
 	rm := gogre3d.GetResourceGroupManager()
-	rm.AddResourceLocation("./graphics/gogre3d/Media/fonts", "FileSystem")
-	rm.AddResourceLocation("./graphics/gogre3d/Media/models", "FileSystem")
-	rm.AddResourceLocation("./graphics/gogre3d/Media/materials/scripts", "FileSystem")
-	rm.AddResourceLocation("./graphics/gogre3d/Media/materials/programs", "FileSystem")
-	rm.AddResourceLocation("./graphics/gogre3d/Media/materials/textures", "FileSystem")
+	rm.AddResourceLocation("./graphics/media/models", "FileSystem")
+	rm.AddResourceLocation("./graphics/media/materials/scripts", "FileSystem")
+	rm.AddResourceLocation("./graphics/media/materials/textures", "FileSystem")
 	rm.InitialiseAllResourceGroups()
-
-	head := sm.CreateEntity("Head", "ogrehead.mesh")
-	rnode := sm.GetRootSceneNode()
-	headnode := rnode.CreateChildSceneNode()
-	headnode.AttachObject(head)
-
-	sm.SetAmbientLight(0.5, 0.5, 0.5, 0)
-	
-	light := sm.CreateLight("MyLight")
-	light.SetPosition(20, 80, 50)
 
 	return nil
 }
 
-func (r *RenderSystem)Frequency() time.Duration {
-	return 40 * time.Millisecond
+func (sys *RenderSystem) teardown() {
+	sys.r.Delete()
 }
 
 func (sys *RenderSystem) Update(timestep time.Duration) (stop bool, err error) {
 	fmt.Printf("render: %v\n", timestep)
 
-	for _, actor := range sys.s.Find(physics.Pid, Pid) {
-		p := actor.Get(physics.Pid).(*physics.Pos)
-		g := actor.Get(Pid).(*Mesh)
-		fmt.Printf("before push: %+v %+v\n", p, g)
-		p.PushSync(g)
-		fmt.Printf("after push: %+v %+v\n", p, g)
+	for _, actor := range sys.scene.Find(physics.PidPos, PidMesh) {
+		p := actor.Get(physics.PidPos).(*physics.Pos)
+		m := actor.Get(PidMesh).(*Mesh)
+		m.ogre_update(p)
+		fmt.Printf("mesh after push: %+v %+v\n", p, m)
+	}
+
+	for _, actor := range sys.scene.Find(physics.PidPos, PidCam) {
+		p := actor.Get(physics.PidPos).(*physics.Pos)
+		c := actor.Get(PidCam).(*Camera)
+		c.ogre_update(p)
+		fmt.Printf("cam after push: %+v %+v\n", p, c)
 	}
 	
-	if err = sys.RenderOne(timestep); err != nil {
-		stop = true
+	for _, actor := range sys.scene.Find(physics.PidPos, PidLight) {
+		p := actor.Get(physics.PidPos).(*physics.Pos)
+		l := actor.Get(PidLight).(*Light)
+		l.ogre_update(p)
+		fmt.Printf("light after push: %+v %+v\n", p, l)
 	}
 
-	if !stop {
-		stop = sys.checkStop()
+	if err = sys.renderOne(timestep); err != nil {
+		return true, errors.New("error during ogre.RenderOne()")
 	}
-	return
+
+	return false, nil
 }
 
-func (sys *RenderSystem)checkStop() bool {
-	select {
-	case <-sys.Stop:
-		println("received stop signal")
-		return true
-	default:
-		return false
-	}
-
-	return false
-}
-
-func (sys *RenderSystem)RenderOne(timestep time.Duration) error {
+func (sys *RenderSystem) renderOne(timestep time.Duration) error {
 	gogre3d.MessagePump()
 
 	if sys.w.IsClosed() {
@@ -122,8 +175,8 @@ func (sys *RenderSystem)RenderOne(timestep time.Duration) error {
 	return nil
 }
 
-func (sys *RenderSystem)Exit() {
-	sys.r.Delete()
-
-	sys.Stop <- true
+func (sys *RenderSystem) Ambient(r, g, b, a float32) {
+	sys.do <- func(sys *RenderSystem) {
+		sys.sm.SetAmbientLight(r, g, b, a)
+	}
 }

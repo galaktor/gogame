@@ -17,16 +17,38 @@ func main() {
 
 	s := scene.New()
 
-	physics.Start(s)
-	render := graphics.Start(s)
+	println("started")
 
-	a := s.Add("a")
-	a.Add(physics.NewPos())
-	a.Add(graphics.NewMesh())
+	psys := physics.New(s)
+	rsys := graphics.New(s)
 	
-	time.Sleep(10 * time.Second)
+	println("adding head")
+	h := s.Add("head")
+	h.Add(psys.Pos()) // 0, 0, 0
+	println("create mesh")
+	h.Add(rsys.Mesh("head", "ogrehead.mesh"))
+	
+	c := s.Add("camera")
+	pp := psys.Pos()
+	pp.Set(0, 0, 80)
+	c.Add(pp)
+	cp := rsys.Cam(c.Id)
+	cp.LookAt(0, 0, -300)
+	cp.NearClip(5)
+	c.Add(cp)
 
-	render.Stop <- true
-	println("waiting for render system to exit")
-	<-render.Stop
+	l := s.Add("light")
+	pp = psys.Pos()
+	pp.Set(20, 80, 50)
+	l.Add(pp)
+	l.Add(rsys.Light(l.Id))
+
+	rsys.Ambient(0.5, 0.5, 0.5, 0)
+
+	time.Sleep(3 * time.Second)
+
+	rsys.Stop()
+//	println("waiting for render system to exit")
+//	<-rsys.Stop
+	time.Sleep(1 * time.Second)
 }

@@ -4,14 +4,14 @@ import (
 	"../../scene"
 )
 
-var Pid = scene.PType(1)
+var PidPos = scene.PType(1)
 
 type Pos struct {
 	Do      chan func(*Pos)
 	X, Y, Z float32
 }
 
-func NewPos() *Pos {
+func (m *MovementSystem) Pos() *Pos {
 	p := &Pos{}
 	p.Do = make(chan func(*Pos))
 	p.start()
@@ -19,7 +19,7 @@ func NewPos() *Pos {
 }
 
 func (p *Pos) Type() scene.PType {
-	return Pid
+	return PidPos
 }
 
 func (p *Pos) start() {
@@ -31,6 +31,15 @@ func (p *Pos) start() {
 	}()
 }
 
+func (p *Pos) Set(x, y, z float32) {
+	// capture values
+	x1, y1, z1 := x, y, z
+
+	p.Do <- func(p *Pos) {
+		p.X, p.Y, p.Z = x1, y1, z1
+	}
+}
+
 type CanPullPosition interface {
 	Pull(p *Pos)
 }
@@ -39,9 +48,5 @@ type CanPushPosition interface {
 }
 
 func (p *Pos) Push(to CanPullPosition) {
-	to.Pull(p)
-}
-
-func (p *Pos) PushSync(to CanPullPosition) {
-	p.Do <- func(p *Pos) { p.Push(to) }
+	p.Do <- func(p *Pos) { to.Pull(p) }
 }

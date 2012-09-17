@@ -2,44 +2,114 @@ package physics
 
 import (
 	"time"
-	"fmt"
+//	"fmt"
 
 	"../../scene"
 )
 
 type MovementSystem struct {
-	s *scene.S
-	// TODO: prop ids used
+	do chan func(*MovementSystem)
+	running bool
+	scene *scene.S
 }
 
-func movementSystem(s *scene.S) *MovementSystem {
-	return &MovementSystem{s}
+func New(s *scene.S) *MovementSystem {
+	sys := &MovementSystem{do:make(chan func(*MovementSystem))}
+
+	sys.Start(s)
+
+	sys.Syn()
+
+	return sys
 }
 
-func (m *MovementSystem)Frequency() time.Duration {
-	return 16 * time.Millisecond
+func (sys *MovementSystem)Start(s *scene.S) {
+	if !sys.running {
+		sys.scene = s
+
+		// begin handling of events
+		go func() {
+			// no need to restrict to single thread (yet?)
+			//runtime.LockOSThread()
+
+			if err := sys.setup(); err != nil {
+				panic(err.Error())
+			}
+
+			sys.running = true
+
+			// start command handler
+			for sys.running {
+				visit := <-sys.do
+				visit(sys)
+			}
+
+			sys.teardown()
+		}()
+
+		sys.Syn()
+
+		// launch update timer
+		ticker := time.Tick(16 * time.Millisecond)
+		go func() {
+			last := time.Now()
+			for sys.running {
+				now := <-ticker
+				sys.tick(now.Sub(last))
+				last = now
+			}
+		}()
+	}
 }
 
-func (p *MovementSystem) Update(timestep time.Duration) (bool, error) {
+func (sys *MovementSystem)Stop() {
+	if sys.running {
+		sys.do <- func(sys *MovementSystem) {
+			sys.running = false
+		}
+	}
+}
+
+func (sys *MovementSystem)tick(timestep time.Duration) {
+	ts := timestep
+	sys.do <- func(sys *MovementSystem) {
+		sys.Update(ts)
+	}
+}
+
+func (sys *MovementSystem)Syn() {
+	ack := make(chan bool)
+	sys.do <- func(sys *MovementSystem) {
+		ack <- true
+	}
+	<-ack
+	close(ack)
+}
+
+func (sys *MovementSystem)setup() error {
+	// no setup needed right now
+	println("setting up movement system")
+	return nil
+}
+
+func (sys *MovementSystem)teardown() {
+	// no teardown needed right now
+	println("tearing down movement system")
+}
+
+func (sys *MovementSystem) Update(timestep time.Duration) (bool, error) {
+	/*
 	fmt.Printf("movement: %v\n", timestep)
 
-	if actor := p.s.Actors["a"]; actor != nil {
-		phy := actor.Get(Pid).(*Pos)
+	if actor := sys.scene.Actors["head"]; actor != nil {
+		phy := actor.Get(PidPos).(*Pos)
 		phy.X += 1
 		phy.Y += 2
 		phy.Z += 3
 	} else {
 		fmt.Println("actor \"a\" not found")
 	}
+	 */
 
 	return true,nil
-
-}
-
-func (m *MovementSystem)Init() error {
-	return nil
-}
-
-func (m *MovementSystem)Exit() {
-	// do nothing
 }
