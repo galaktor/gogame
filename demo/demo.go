@@ -47,8 +47,7 @@ func main() {
 
 	time.Sleep(3 * time.Second)
 
+	// TODO: make synchronous
 	rsys.Stop()
-//	println("waiting for render system to exit")
-//	<-rsys.Stop
 	time.Sleep(1 * time.Second)
 }
