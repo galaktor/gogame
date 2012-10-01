@@ -40,8 +40,8 @@ func (sys *RenderSystem) Cam(name string) *Camera {
 		ogrec := sys.sm.CreateCamera(name)
 		ogrevp := sys.w.AddViewport(ogrec)
 		ogrevp.SetBackgroundColour(0, 0, 0, 0)
-		w, h := ogrevp.GetActualWidth(), ogrevp.GetActualHeight()
-		ogrec.SetAspectRatio(w / h)
+//		w, h := ogrevp.GetActualWidth(), ogrevp.GetActualHeight()
+		ogrec.SetAspectRatio(ogrevp.GetActualWidth(), ogrevp.GetActualHeight())
 
 		c.do <- func(m *Camera) {
 			println("cam assigning ogre vars")

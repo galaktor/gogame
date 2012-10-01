@@ -22,7 +22,7 @@ func (m *Mesh) Type() scene.PType {
 	return PidMesh
 }
 
-func (sys *RenderSystem) Mesh(name, src string) *Mesh {
+func (sys *RenderSystem) Mesh(name, src, rgroup string) *Mesh {
 	m := &Mesh{}
 	m.do = make(chan func(*Mesh))
 
@@ -32,13 +32,14 @@ func (sys *RenderSystem) Mesh(name, src string) *Mesh {
 	sys.do <- func(sys *RenderSystem) {
 
 		// create ogre stuff in rendersystem thread
-		ogree := sys.sm.CreateEntity(name, src)
-		rnode := sys.sm.GetRootSceneNode()
-		ogren := rnode.CreateChildSceneNode()
-		// should be an action on the mesh property?
-		ogren.AttachObject(ogree)
+		ogree := sys.sm.CreateEntity(name, src, rgroup)
+		ogren := sys.sm.CreateChildSceneNode(name)
+		// TODO: should be an action on the mesh property?
+		ogren.Attach(ogree)
+		// TODO: store prop as user data on node for later back ref?
 
 		m.do <- func(m *Mesh) {
+			println("mesh assigning ogre vars")
 			m.e = ogree
 			m.n = ogren
 		}

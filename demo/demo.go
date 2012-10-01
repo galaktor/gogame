@@ -17,16 +17,12 @@ func main() {
 
 	s := scene.New()
 
-	println("started")
-
 	psys := physics.New(s)
 	rsys := graphics.New(s)
 	
-	println("adding head")
 	h := s.Add("head")
 	h.Add(psys.Pos()) // 0, 0, 0
-	println("create mesh")
-	h.Add(rsys.Mesh("head", "ogrehead.mesh"))
+	h.Add(rsys.Mesh("head", "ogrehead.mesh", "Default"))
 	
 	c := s.Add("camera")
 	pp := psys.Pos()
@@ -43,11 +39,12 @@ func main() {
 	l.Add(pp)
 	l.Add(rsys.Light(l.Id))
 
-	rsys.Ambient(0.5, 0.5, 0.5, 0)
+	rsys.Ambient(0.5, 0.5, 0.5)
 
 	time.Sleep(3 * time.Second)
 
-	// TODO: make synchronous
+	// TODO: make stopping synchronous
+	psys.Stop()
 	rsys.Stop()
 	time.Sleep(1 * time.Second)
 }

@@ -23,17 +23,26 @@ type RenderSystem struct {
 	sm gogre3d.SceneManager
 }
 
+func (sys *RenderSystem) Syn() {
+	ack := make(chan bool)
+	sys.do <- func(sys *RenderSystem) {
+		ack <- true
+	}
+	<-ack
+	close(ack)
+}
+
 func New(s *scene.S) *RenderSystem {
 	sys := &RenderSystem{do:make(chan func(*RenderSystem))}
-
 	sys.Start(s)
-
 	sys.Syn()
-	
 	return sys
 }
 
+
+
 func (sys *RenderSystem)Start(s *scene.S) {
+	// bool check not thread safe
 	if !sys.running {
 		sys.scene = s
 
@@ -74,6 +83,8 @@ func (sys *RenderSystem)Start(s *scene.S) {
 	}
 }
 
+
+
 // TODO: make synchronous, wait until teardown complete!
 func (sys *RenderSystem) Stop() {
 	if sys.running {
@@ -83,6 +94,7 @@ func (sys *RenderSystem) Stop() {
 	}
 }
 
+
 func (sys *RenderSystem)tick(timestep time.Duration) {
 	// is this a copied value, or not?
 	ts := timestep
@@ -91,16 +103,11 @@ func (sys *RenderSystem)tick(timestep time.Duration) {
 	}
 }
 
-func (sys *RenderSystem) Syn() {
-	ack := make(chan bool)
-	sys.do <- func(sys *RenderSystem) {
-		ack <- true
-	}
-	<-ack
-	close(ack)
-}
+
 
 func (r *RenderSystem)setup() error {
+	println("setting up render system")
+
 	r.r = gogre3d.NewRoot("", "", "ogre.log")
 	
 	// setup OpenGL
@@ -112,22 +119,27 @@ func (r *RenderSystem)setup() error {
 	r.r.SetRenderSystem(rs)
 
 	r.w = r.r.Initialise(true, "gogame demo")
-	r.sm = r.r.CreateSceneManager()
+	r.sm = r.r.CreateSceneManager("DefaultSceneManager", "The SceneManager")
 
-	tm := gogre3d.GetTextureManager()
-	tm.SetDefaultNumMipmaps(5)
+	gogre3d.SetDefaultNumMipmaps(5)
 
-	rm := gogre3d.GetResourceGroupManager()
-	rm.AddResourceLocation("./graphics/media/models", "FileSystem")
-	rm.AddResourceLocation("./graphics/media/materials/scripts", "FileSystem")
-	rm.AddResourceLocation("./graphics/media/materials/textures", "FileSystem")
-	rm.InitialiseAllResourceGroups()
+	rgm := gogre3d.GetResourceGroupManager()
+	rgm.AddResourceLocation("./graphics/media/models", "FileSystem", "Default")
+	rgm.AddResourceLocation("./graphics/media/materials/scripts", "FileSystem", "Default")
+	rgm.AddResourceLocation("./graphics/media/materials/textures", "FileSystem", "Default")
+	rgm.InitialiseAllResourceGroups()
+
+	println("setup render system complete")
 
 	return nil
 }
 
-func (sys *RenderSystem) teardown() {
-	sys.r.Delete()
+func (sys *RenderSystem)teardown() {
+	println("tearing down render system")
+
+	sys.r.Destroy()
+
+	println("teardown render system complete")
 }
 
 func (sys *RenderSystem) Update(timestep time.Duration) (stop bool, err error) {
@@ -168,15 +180,15 @@ func (sys *RenderSystem) renderOne(timestep time.Duration) error {
 		return errors.New("window closed")
 	}
 
-	if !sys.r.RenderOneFrame() {
+	if !sys.r.RenderOneFrameEx(float32(timestep.Nanoseconds())/1000000) {
 		return errors.New("error during render")
 	}
 
 	return nil
 }
 
-func (sys *RenderSystem) Ambient(r, g, b, a float32) {
+func (sys *RenderSystem) Ambient(r, g, b float32) {
 	sys.do <- func(sys *RenderSystem) {
-		sys.sm.SetAmbientLight(r, g, b, a)
+		sys.sm.SetAmbientLight(r, g, b)
 	}
 }

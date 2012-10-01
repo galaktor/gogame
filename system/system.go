@@ -9,44 +9,53 @@ import (
 	"errors"
 )
 
-// Every system must provide it's tick frequency as well
-// as an Update method to be called each tick. Init
-// and Exit allow for setup and teardown of the system
 type System interface {
+	DoOne()
+	Syn()
+	Running(bool)
+	IsRunning()
 	Frequency() time.Duration
-	Init() error
-	Update(timestep time.Duration) (stop bool, err error)
-	Exit()
+	Setup() error
+	Tick(time.Duration)
+	TearDown()
 }
 
-// Starts a goroutine at the system's frequency which
-// periodically calls it's update method, providing
-// the "timestep", which is the time since the last
-// update has completed.
-// TODO: make timestep reflect if a system is falling behind
-// it's frequency
-func Start(s System, lockthread bool) (err error) {
-	if lockthread {
-		runtime.LockOSThread()
+func Start(sys System, lockOsThread bool) (err error) {
+	// TODO: IsRunning check not atomic
+	// checked here, set further down
+	if sys.IsRunning() {
+		return errors.New("system already running")
+
+	} else {
+		go func() {
+			if lockOsThread {
+				runtime.LockOSThread()
+			}
+			if e := sys.Setup(); e != nil {
+				err = e
+				return
+			}
+
+			sys.Running(true)
+			for sys.IsRunning() {
+				sys.DoOne()
+			}
+
+			sys.TearDown()
+		}()
+
+		sys.Syn()
+
+		ticker := time.Tick(sys.Frequency())
+		go func() {
+			last := time.Now()
+			for sys.IsRunning() {
+				now := <-ticker
+				sys.Tick(now.Sub(last))
+				last = now
+			}
+		}()	
 	}
 
-	if e := s.Init(); e != nil {
-		err = errors.New("error initialising system: " + e.Error())
-		return
-	}
-
-	ticker := time.Tick(s.Frequency())
-	last := time.Now()
-	for now := range ticker {
-		if stop,e := s.Update(now.Sub(last)); stop || e != nil{
-			err = e
-			
-			s.Exit()
-			break
-		}
-		
-		last = now
-	}
-
-	return
+	return nil
 }

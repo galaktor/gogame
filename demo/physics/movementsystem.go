@@ -2,7 +2,7 @@ package physics
 
 import (
 	"time"
-//	"fmt"
+	"fmt"
 
 	"../../scene"
 )
@@ -15,15 +15,13 @@ type MovementSystem struct {
 
 func New(s *scene.S) *MovementSystem {
 	sys := &MovementSystem{do:make(chan func(*MovementSystem))}
-
 	sys.Start(s)
-
 	sys.Syn()
-
 	return sys
 }
 
 func (sys *MovementSystem)Start(s *scene.S) {
+	// bool check not thread safe
 	if !sys.running {
 		sys.scene = s
 
@@ -88,28 +86,28 @@ func (sys *MovementSystem)Syn() {
 
 func (sys *MovementSystem)setup() error {
 	// no setup needed right now
-	println("setting up movement system")
+	println("setup movement system complete")
 	return nil
 }
 
 func (sys *MovementSystem)teardown() {
 	// no teardown needed right now
-	println("tearing down movement system")
+	println("teardown movement system complete")
 }
 
 func (sys *MovementSystem) Update(timestep time.Duration) (bool, error) {
-	/*
+
 	fmt.Printf("movement: %v\n", timestep)
 
 	if actor := sys.scene.Actors["head"]; actor != nil {
 		phy := actor.Get(PidPos).(*Pos)
-		phy.X += 1
-		phy.Y += 2
-		phy.Z += 3
+		//phy.X += 0.01
+		//phy.Y += 0.02
+		phy.Z -= 0.1
 	} else {
 		fmt.Println("actor \"a\" not found")
 	}
-	 */
+
 
 	return true,nil
 }
